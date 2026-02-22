@@ -1,0 +1,10 @@
+{
+  "projects": { "default": "play-today-479819" },
+  "targets": {
+    "play-today-479819": {
+      "hosting": {
+        "miniapp": "play-today-miniapp"
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+/* Кастомизация слайдера для шторки тренера */
+.trainer-slider {
+  position: relative;
+}
+
+.trainer-slider .slick-slide {
+  height: 16rem;
+}
+
+.trainer-slider .slick-slide > div {
+  height: 100%;
+}
+
+.trainer-slider .slick-dots {
+  bottom: 12px;
+}
+
+.trainer-slider .slick-dots li button:before {
+  color: white;
+  opacity: 0.5;
+  font-size: 8px;
+}
+
+.trainer-slider .slick-dots li.slick-active button:before {
+  color: white;
+  opacity: 1;
+}
