@@ -5,6 +5,8 @@ import { Card, CardContent } from './ui/card';
 export interface TennisGroup {
   id: string;
   trainer: string;
+  /** Telegram ID создателя тренировки (тренера) для уведомлений */
+  trainerUserId?: number;
   location: string;
   date: string;
   time: string;

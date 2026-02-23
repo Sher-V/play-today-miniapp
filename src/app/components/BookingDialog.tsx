@@ -1,4 +1,4 @@
-import { Phone, MessageCircle, X, Copy } from 'lucide-react';
+import { Phone, MessageCircle, Copy, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   Dialog,
@@ -15,6 +15,7 @@ interface BookingDialogProps {
   trainerName: string;
   trainerContact: string;
   onContactMe: () => void;
+  isContactSending?: boolean;
 }
 
 export function BookingDialog({ 
@@ -22,7 +23,8 @@ export function BookingDialog({
   onClose, 
   trainerName, 
   trainerContact,
-  onContactMe 
+  onContactMe,
+  isContactSending = false,
 }: BookingDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -81,10 +83,15 @@ export function BookingDialog({
           <div className="space-y-3">
             <Button
               onClick={onContactMe}
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-base font-semibold rounded-xl flex items-center justify-center gap-2"
+              disabled={isContactSending}
+              className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-base font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-70"
             >
-              <MessageCircle className="w-5 h-5" />
-              Связаться со мной
+              {isContactSending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <MessageCircle className="w-5 h-5" />
+              )}
+              {isContactSending ? 'Отправка...' : 'Связаться со мной'}
             </Button>
             <p className="text-xs text-center text-gray-500">
               Тренер свяжется с вами в ближайшее время

@@ -63,6 +63,8 @@
 - `FIREBASE_SERVICE_ACCOUNT` — JSON ключ сервисного аккаунта **prod**-проекта.
 - `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` — конфиг **prod**-веб-приложения.
 
+**Cloud Functions (кнопка «Связаться со мной»):** при пуше в `dev` / `main` деплоятся и Hosting, и Functions. В **environment «dev»** добавьте свой секрет **`TELEGRAM_BOT_TOKEN`** (токен бота для stage из @BotFather). В **environment «prod»** добавьте свой **`TELEGRAM_BOT_TOKEN`** (токен бота для prod). У dev и prod — свои токены в своих секретах. Без этого секрета деплой функций завершится ошибкой (Hosting к этому моменту уже задеплоен).
+
 В workflow используется `GITHUB_TOKEN` (выдаётся автоматически). Stage и prod оба используют **target: miniapp** и одну и ту же структуру; различаются только проект и секреты (dev/prod environment).
 
 **Если в проекте несколько сайтов Hosting** и нужно деплоить на новый сайт, а не на дефолтный:

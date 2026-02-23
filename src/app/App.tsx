@@ -11,6 +11,7 @@ import { mapTrainingToGroup } from '../utils/trainingMapper';
 import { createTrainersMap, findTrainerByName, createFallbackTrainerInfo } from '../utils/trainerMapper';
 import { parseGroupDateTime, isPastDateTime } from '../utils/dateCalculator';
 import { useTelegram } from '../hooks/useTelegram';
+import { sendContactRequest } from '../lib/sendContactRequest';
 
 export default function App() {
   // Telegram Web App интеграция
@@ -39,6 +40,7 @@ export default function App() {
   });
 
   const [selectedTrainer, setSelectedTrainer] = useState<TrainerInfo | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<TennisGroup | null>(null);
   const [isTrainerDrawerOpen, setIsTrainerDrawerOpen] = useState(false);
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
 
@@ -101,48 +103,83 @@ export default function App() {
     });
   }, [filters, trainings]);
 
-  const handleTrainerClick = (trainerName: string) => {
-    // Haptic feedback при клике
+  const handleTrainerClick = (group: TennisGroup) => {
     hapticFeedback('light');
-    
-    const trainer = findTrainerByName(trainersMap, trainerName);
+    setSelectedGroup(group);
+    const trainer = findTrainerByName(trainersMap, group.trainer);
     if (trainer) {
       setSelectedTrainer(trainer);
       setIsTrainerDrawerOpen(true);
     } else {
-      // Ищем контакт из тренировки
-      const training = trainings.find(t => t.trainerName === trainerName);
+      const training = trainings.find(t => t.trainerName === group.trainer);
       const contact = training?.contact || '';
-      setSelectedTrainer(createFallbackTrainerInfo(trainerName, contact));
+      setSelectedTrainer(createFallbackTrainerInfo(group.trainer, contact));
       setIsTrainerDrawerOpen(true);
     }
   };
 
-  const handleBookingClick = (trainerName: string) => {
-    // Haptic feedback при клике
+  const handleBookingClick = (group: TennisGroup) => {
     hapticFeedback('medium');
-    
-    const trainer = findTrainerByName(trainersMap, trainerName);
+    setSelectedGroup(group);
+    const trainer = findTrainerByName(trainersMap, group.trainer);
     if (trainer) {
       setSelectedTrainer(trainer);
       setIsBookingDialogOpen(true);
     } else {
-      // Ищем контакт из тренировки
-      const training = trainings.find(t => t.trainerName === trainerName);
+      const training = trainings.find(t => t.trainerName === group.trainer);
       const contact = training?.contact || '';
-      setSelectedTrainer(createFallbackTrainerInfo(trainerName, contact));
+      setSelectedTrainer(createFallbackTrainerInfo(group.trainer, contact));
       setIsBookingDialogOpen(true);
     }
   };
 
-  const handleContactMe = () => {
-    // Haptic feedback успеха
-    hapticFeedback('success');
-    
-    toast.success('Заявка отпралена!', {
-      description: 'Тренер свяжется с вами в ближайшее время',
-    });
-    setIsBookingDialogOpen(false);
+  const [isContactSending, setIsContactSending] = useState(false);
+
+  const handleContactMe = async () => {
+    if (!selectedTrainer) return;
+    if (!telegramUser?.id) {
+      toast.error('Не удалось определить ваш Telegram', {
+        description: 'Откройте приложение через бота в Telegram',
+      });
+      return;
+    }
+
+    setIsContactSending(true);
+    hapticFeedback('medium');
+
+    try {
+      await sendContactRequest({
+        telegramId: telegramUser.id,
+        trainerName: selectedTrainer.name,
+        trainerContact: selectedTrainer.contact,
+        training: selectedGroup
+          ? {
+              location: selectedGroup.location,
+              date: selectedGroup.date,
+              time: selectedGroup.time,
+              level: selectedGroup.level,
+              dayOfWeek: selectedGroup.dayOfWeek,
+              groupSize: selectedGroup.groupSize,
+              price: selectedGroup.price,
+            }
+          : null,
+        trainerTelegramId: selectedGroup?.trainerUserId,
+        pupilFirstName: telegramUser.first_name,
+        pupilUsername: telegramUser.username,
+      });
+      hapticFeedback('success');
+      toast.success('Заявка отправлена!', {
+        description: 'Вам пришло сообщение в Telegram. Тренер свяжется с вами в ближайшее время.',
+      });
+      setIsBookingDialogOpen(false);
+    } catch (e) {
+      hapticFeedback('error');
+      toast.error('Не удалось отправить заявку', {
+        description: e instanceof Error ? e.message : 'Попробуйте позже',
+      });
+    } finally {
+      setIsContactSending(false);
+    }
   };
 
   return (
@@ -235,8 +272,8 @@ export default function App() {
                 <TennisGroupCard
                   key={group.id}
                   group={group}
-                  onTrainerClick={() => handleTrainerClick(group.trainer)}
-                  onBookingClick={() => handleBookingClick(group.trainer)}
+                  onTrainerClick={() => handleTrainerClick(group)}
+                  onBookingClick={() => handleBookingClick(group)}
                 />
               ))}
             </div>
@@ -262,6 +299,7 @@ export default function App() {
         trainerName={selectedTrainer?.name || ''}
         trainerContact={selectedTrainer?.contact || ''}
         onContactMe={handleContactMe}
+        isContactSending={isContactSending}
       />
     </div>
   );

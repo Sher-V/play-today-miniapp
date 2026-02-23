@@ -77,6 +77,7 @@ export function mapTrainingToGroup(training: GroupTraining): TennisGroup {
   return {
     id: training.id,
     trainer: training.trainerName,
+    trainerUserId: training.userId,
     location: training.courtName,
     date: date,
     time: `${time}-${endTime}`,
