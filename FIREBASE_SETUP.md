@@ -46,15 +46,24 @@
 
 После деплоя в консоли появится ссылка на сайт вида `https://your-project-id.web.app`.
 
-### Деплой через GitHub Actions
+### Деплой через GitHub Actions (Stage + Prod)
 
-При пуше в ветку `main` приложение автоматически деплоится на Firebase Hosting через официальный [Firebase Hosting GitHub Action](https://github.com/FirebaseExtended/action-hosting-deploy). Нужно один раз настроить секреты:
+- **Stage:** при пуше в ветку **`dev`** → используется **environment «dev»** → деплой в отдельный Firebase-проект на сайт **play-today-miniapp-dev**. URL: `https://play-today-miniapp-dev.web.app`.
+- **Prod:** при пуше в ветку **`main`** → используется **environment «prod»** → деплой в проект на сайт **play-today-miniapp** (`https://play-today-miniapp.web.app`).
 
-1. **Service Account (для деплоя):** в [Firebase Console](https://console.firebase.google.com/) → **Project settings** → **Service accounts** → **Generate new private key**. Скопируйте **весь JSON** файла. В репозитории: **Settings** → **Secrets and variables** → **Actions** → **New repository secret** → имя `FIREBASE_SERVICE_ACCOUNT_PLAY_TODAY_479819`, значение — вставьте скопированный JSON целиком.
+Секреты задаются в **GitHub Environments** (Settings → Environments → dev / prod). В каждом окружении — **одни и те же имена** секретов, значения разные (stage vs prod).
 
-2. **Конфиг Firebase для сборки:** добавьте те же 6 переменных из раздела «Конфигурация через переменные окружения» как **repository secrets**: `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`.
+**В environment «dev»** добавьте:
+- `VITE_FIREBASE_PROJECT_ID` — Project ID вашего **stage** Firebase-проекта (используется и для деплоя, и для конфига приложения при сборке).
+- `FIREBASE_SERVICE_ACCOUNT` — JSON ключ сервисного аккаунта **stage**-проекта (Project settings → Service accounts → Generate new private key).
+- `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` — остальной конфиг веб-приложения в **stage**-проекте (Project settings → Your apps).
 
-В workflow используется `GITHUB_TOKEN` (выдаётся автоматически), `projectId: play-today-479819`, `channelId: live` и **target: miniapp** (деплой на один из нескольких сайтов Hosting).
+**В environment «prod»** добавьте:
+- `VITE_FIREBASE_PROJECT_ID` — `play-today-479819`.
+- `FIREBASE_SERVICE_ACCOUNT` — JSON ключ сервисного аккаунта **prod**-проекта.
+- `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` — конфиг **prod**-веб-приложения.
+
+В workflow используется `GITHUB_TOKEN` (выдаётся автоматически). Stage и prod оба используют **target: miniapp** и одну и ту же структуру; различаются только проект и секреты (dev/prod environment).
 
 **Если в проекте несколько сайтов Hosting** и нужно деплоить на новый сайт, а не на дефолтный:
 1. В [Firebase Console](https://console.firebase.google.com/) → **Hosting** откройте нужный сайт и скопируйте **Site ID** (например, `play-today-miniapp`).
@@ -76,10 +85,11 @@ npx firebase target:apply hosting miniapp play-today-miniapp
 - В `.firebaserc` в `targets → … → hosting → miniapp` должен быть **ровно этот** Site ID. Если сайт ещё не создан: Hosting → «Add another site», задайте ID (например `play-today-miniapp`), затем обновите `.firebaserc` и закоммитьте.
 
 **Ошибка 403 / «Caller does not have required permission» / «serviceusage.serviceUsageConsumer»:**
-- Сервисный аккаунт (ключ из секрета `FIREBASE_SERVICE_ACCOUNT_...`) должен иметь доступ к Hosting. В [Google Cloud Console](https://console.cloud.google.com/) → **IAM & Admin** → **IAM** найдите этот сервисный аккаунт (по email из JSON ключа) и добавьте роли:
-  - **Firebase Hosting Admin** (или `Firebase Hosting Admin` в Firebase Console → Project settings → Service accounts),
-  - при необходимости **Service Usage Consumer** (`roles/serviceusage.serviceUsageConsumer`).
+- Сервисный аккаунт (ключ из секрета `FIREBASE_SERVICE_ACCOUNT`) должен иметь доступ к Hosting. В [Google Cloud Console](https://console.cloud.google.com/) выберите **проект** (stage или prod), затем **IAM & Admin** → **IAM** → найдите сервисный аккаунт (по email из JSON ключа) и добавьте роли:
+  - **Firebase Hosting Admin**,
+  - **Service Usage Consumer** (`roles/serviceusage.serviceUsageConsumer`) — часто нужна для деплоя из CI.
 - Убедитесь, что в проекте включён **Firebase Hosting API**: [APIs & Services](https://console.cloud.google.com/apis/library) → «Firebase Hosting API» → Enable.
+- Для **stage** (ветка dev) проверьте права в **stage** Firebase-проекте, для **prod** — в prod-проекте.
 
 После настройки каждый `git push` в `main` будет запускать сборку и деплой на выбранный сайт.
 
