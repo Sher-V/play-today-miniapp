@@ -23,8 +23,7 @@
 ## Сборка и деплой
 
 - **Локальный деплой:** [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) — настройка Firebase и команда `pnpm deploy`.
-- **CI:** при пуше в `main` или при PR запускается сборка (`.github/workflows/ci.yml`).
-- **CD:** при пуше в `main` выполняется деплой на Firebase Hosting (`.github/workflows/deploy.yml`). Нужен секрет `FIREBASE_TOKEN` — см. раздел «Деплой через GitHub Actions» в [FIREBASE_SETUP.md](./FIREBASE_SETUP.md).
+- **CD:** при пуше в `dev` — деплой на stage; при пуше в `main` — деплой на prod (`.github/workflows/deploy.yml`). Секреты задаются в GitHub Environments dev/prod — см. [FIREBASE_SETUP.md](./FIREBASE_SETUP.md).
 
 ## Репозиторий
 
