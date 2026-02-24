@@ -82,12 +82,20 @@ const mockTrainings: GroupTraining[] = [
   },
 ];
 
-export function useGroupTrainings() {
+export function useGroupTrainings(enabled = true) {
   const [trainings, setTrainings] = useState<GroupTraining[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      setTrainings([]);
+      setError(null);
+      return;
+    }
+    setLoading(true);
+    setError(null);
     try {
       // Запрос к коллекции groupTrainings
       // Получаем только активные тренировки, отсортированные по дате создания
@@ -125,7 +133,7 @@ export function useGroupTrainings() {
       setError(err as Error);
       setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   return { trainings, loading, error };
 }

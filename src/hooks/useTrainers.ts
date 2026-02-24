@@ -3,12 +3,18 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile } from '../lib/types';
 
-export function useTrainers() {
+export function useTrainers(enabled = true) {
   const [trainers, setTrainers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      setTrainers([]);
+      setError(null);
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -49,7 +55,7 @@ export function useTrainers() {
       setError(err as Error);
       setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   return { trainers, loading, error };
 }

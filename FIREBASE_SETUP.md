@@ -156,6 +156,8 @@ service cloud.firestore {
 
 ### Вариант 3: Продакшн-правила (для production)
 
+Требуется настройка Firebase Authentication (например, кастомный токен по Telegram). Без авторизации создание групп выдаст ошибку «Missing or insufficient permissions».
+
 ```javascript
 rules_version = '2';
 
@@ -184,6 +186,36 @@ service cloud.firestore {
   }
 }
 ```
+
+### Вариант 4: Разработка без Firebase Auth (создание групп разрешено)
+
+Если Firebase Authentication ещё не настроен, используйте эти правила, чтобы форма «Добавить группу» работала. **В продакшене лучше использовать Вариант 3 с авторизацией.**
+
+1. Откройте [Firebase Console](https://console.firebase.google.com/) → ваш проект → **Firestore Database** → вкладка **Rules**.
+2. Вставьте правила ниже и нажмите **Publish**.
+
+```javascript
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Коллекция groupTrainings: чтение всем, создание без авторизации (для разработки)
+    match /groupTrainings/{trainingId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if true;
+    }
+    
+    // Коллекция users: чтение всем, запись без авторизации (для разработки)
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+  }
+}
+```
+
+После публикации правил попробуйте снова нажать «Готово» в форме добавления группы.
 
 ---
 
@@ -301,6 +333,13 @@ service cloud.firestore {
 ### Связь тренировок и тренеров
 
 Приложение связывает данные по полю `trainerName` из `groupTrainings` и `coachName` из `users`. Убедитесь, что имена совпадают точно!
+
+## Индекс для «Мои тренировки»
+
+На странице `/my-groups` используется запрос к `groupTrainings` с фильтрами `userId`, `isActive` и сортировкой по `createdAt`. В Firebase Console → Firestore → Indexes при первом запросе может появиться предложение создать составной индекс. Создайте его по ссылке из ошибки или добавьте вручную:
+
+- Коллекция: `groupTrainings`
+- Поля: `userId` (Ascending), `isActive` (Ascending), `createdAt` (Descending)
 
 ## Примечания
 

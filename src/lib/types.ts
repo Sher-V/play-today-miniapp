@@ -13,6 +13,9 @@ export interface GroupTraining {
   contact: string;
   createdAt: Date;
   isActive: boolean; // Активна ли тренировка (не отменена)
+  // Заполняется администратором при добавлении группы
+  coachAbout?: string;
+  coachPhotoUrl?: string;
 }
 
 // Медиа-файл тренера (фото или видео)
