@@ -345,9 +345,22 @@ export function CoachRegistrationFlow({ onBack, onSubmit }: CoachRegistrationFlo
               }}
             />
             {videoFile && (
-              <p className="text-sm text-gray-600">
-                Выбрано: {videoFile.name}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="flex-1 truncate text-sm text-gray-600">
+                  Выбрано: {videoFile.name}
+                </p>
+                <button
+                  type="button"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700"
+                  onClick={() => {
+                    setVideoFile(null);
+                    if (videoInputRef.current) videoInputRef.current.value = '';
+                  }}
+                  title="Удалить видео"
+                >
+                  ×
+                </button>
+              </div>
             )}
             <Button
               type="button"

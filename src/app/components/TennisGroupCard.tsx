@@ -31,14 +31,6 @@ interface TennisGroupCardProps {
 }
 
 export function TennisGroupCard({ group, onTrainerClick, onBookingClick, onDelete }: TennisGroupCardProps) {
-  // Лог для отладки: почему не показывается корзина
-  console.log('[TennisGroupCard]', {
-    groupId: group.id,
-    groupLocation: group.location,
-    hasOnDelete: onDelete != null,
-    onDeleteType: typeof onDelete,
-  });
-
   const levelColors = {
     green: 'bg-green-100 text-green-800 border-green-300',
     blue: 'bg-blue-100 text-blue-800 border-blue-300',
@@ -60,7 +52,7 @@ export function TennisGroupCard({ group, onTrainerClick, onBookingClick, onDelet
               <span className="text-sm">{group.trainer}</span>
             </div>
           </div>
-          {onDelete ? (
+          {onDelete && (
             <button
               type="button"
               onClick={(e) => {
@@ -73,8 +65,6 @@ export function TennisGroupCard({ group, onTrainerClick, onBookingClick, onDelet
             >
               <Trash2 className="h-5 w-5" />
             </button>
-          ) : (
-            <span className="text-[10px] text-gray-400 shrink-0" title="onDelete отсутствует">(нет onDelete)</span>
           )}
         </div>
 

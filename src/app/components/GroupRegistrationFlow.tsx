@@ -145,7 +145,7 @@ export function GroupRegistrationFlow({
   const stepBlocks = [
     /* Step 0 */
     <div key="0" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 0</h3>
+      <h3 className="font-semibold text-sm text-gray-900">Шаг 1</h3>
       <Label className="text-xs text-gray-600">Вы тренер или администратор клуба?</Label>
       <div className="grid grid-cols-2 gap-2 [&_button]:min-h-14 [&_button]:h-full [&_button]:flex [&_button]:items-center [&_button]:justify-center">
         <Button
@@ -176,7 +176,7 @@ export function GroupRegistrationFlow({
     </div>,
     /* Step 1 */
     <div key="1" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 1</h3>
+      <h3 className="font-semibold text-sm text-gray-900">Шаг 2</h3>
       <Label className="text-xs text-gray-600">Где проходит тренировка?</Label>
       <Input
         placeholder="Например: ТК «Коломенский»"
@@ -187,7 +187,7 @@ export function GroupRegistrationFlow({
     </div>,
     /* Step 2 */
     <div key="2" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 2</h3>
+      <h3 className="font-semibold text-sm text-gray-900">Шаг 3</h3>
       <Label className="text-xs text-gray-600">Дата и время занятия</Label>
       <div className="flex flex-wrap gap-2 items-start">
         <div className="flex flex-col gap-2">
@@ -235,7 +235,7 @@ export function GroupRegistrationFlow({
     </div>,
     /* Step 3 */
     <div key="3" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 3</h3>
+      <h3 className="font-semibold text-sm text-gray-900">Шаг 4</h3>
       <Label className="text-xs text-gray-600">Есть ли место в группе на регулярной основе?</Label>
       <div className="grid grid-cols-2 gap-2">
         <Button
@@ -258,7 +258,7 @@ export function GroupRegistrationFlow({
     </div>,
     /* Step 4 */
     <div key="4" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 4</h3>
+      <h3 className="font-semibold text-sm text-gray-900">Шаг 5</h3>
       <Label className="text-xs text-gray-600">Длительность тренировки</Label>
       <div className="grid grid-cols-3 gap-2">
         {DURATION_OPTIONS.map((d) => (
@@ -276,7 +276,7 @@ export function GroupRegistrationFlow({
     </div>,
     /* Step 5 */
     <div key="5" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 5</h3>
+      <h3 className="font-semibold text-sm text-gray-900">Шаг 6</h3>
       <Label className="text-xs text-gray-600">Сколько людей может заниматься в группе?</Label>
       <div className="grid grid-cols-2 gap-2">
         {GROUP_SIZE_OPTIONS.map((s) => (
@@ -294,7 +294,7 @@ export function GroupRegistrationFlow({
     </div>,
     /* Step 6 */
     <div key="6" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 6</h3>
+      <h3 className="font-semibold text-sm text-gray-900">Шаг 7</h3>
       <Label className="text-xs text-gray-600">Уровень группы</Label>
       <div className="grid grid-cols-2 gap-2 [&_button]:min-h-9 [&_button]:h-auto [&_button]:whitespace-normal [&_button]:py-2 [&_button]:text-center [&_button]:leading-tight">
         {LEVEL_OPTIONS.map((opt) => {
@@ -325,7 +325,7 @@ export function GroupRegistrationFlow({
     </div>,
     /* Step 7 */
     <div key="7" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 7</h3>
+      <h3 className="font-semibold text-sm text-gray-900">Шаг 8</h3>
       <Label className="text-xs text-gray-600">Стоимость пробного занятия для человека (₽)</Label>
       <Input
         type="text"
@@ -338,7 +338,7 @@ export function GroupRegistrationFlow({
     </div>,
     /* Step 8 */
     <div key="8" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 8</h3>
+      <h3 className="font-semibold text-sm text-gray-900">Шаг 9</h3>
       <Label className="text-xs text-gray-600">Ваши контакты</Label>
       <Input
         placeholder="Телефон или @username"

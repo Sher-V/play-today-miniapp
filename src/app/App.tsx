@@ -184,7 +184,7 @@ export default function App() {
             </div>
             <div className="flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                {isListPage ? 'Мои тренировки' : 'Теннисные группы'}
+                {isListPage ? 'Групповые тренировки' : 'Теннисные группы'}
               </h1>
               <p className="text-xs sm:text-sm text-gray-600">
                 {isAddGroupPage && 'Добавление группы'}
