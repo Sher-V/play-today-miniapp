@@ -14,6 +14,7 @@ export interface GroupTraining {
   createdAt: Date;
   isActive: boolean; // Активна ли тренировка (не отменена)
   // Заполняется администратором при добавлении группы
+  coachName?: string; // Имя и фамилия тренера
   coachAbout?: string;
   coachPhotoUrl?: string;
 }

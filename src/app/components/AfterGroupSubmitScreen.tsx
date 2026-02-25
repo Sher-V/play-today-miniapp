@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { ChevronLeft, CheckCircle, UserCircle, AlertTriangle, Loader2, Upload, User } from 'lucide-react';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { useHasCoachProfile } from '../../hooks/useHasCoachProfile';
 import { updateGroupTrainingCoachInfo } from '../../lib/createGroupTraining';
 import type { GroupCreatorRole } from '../../lib/groupRegistrationStorage';
@@ -29,6 +31,7 @@ export function AfterGroupSubmitScreen({
   const showCoachRegistration = !isAdmin && !coachCheckLoading && !hasCoach;
   const alreadyCoach = !isAdmin && !coachCheckLoading && hasCoach;
 
+  const [coachName, setCoachName] = useState('');
   const [coachPhotoUrl, setCoachPhotoUrl] = useState<string | null>(null);
   const [coachAbout, setCoachAbout] = useState('');
   const [saving, setSaving] = useState(false);
@@ -51,6 +54,7 @@ export function AfterGroupSubmitScreen({
     setSaving(true);
     try {
       await updateGroupTrainingCoachInfo(groupId, {
+        coachName: coachName.trim() || undefined,
         coachAbout: coachAbout.trim() || undefined,
         coachPhotoUrl: coachPhotoUrl || undefined,
       });
@@ -102,15 +106,39 @@ export function AfterGroupSubmitScreen({
             </p>
 
             <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Имя и фамилия тренера</Label>
+              <Input
+                value={coachName}
+                onChange={(e) => setCoachName(e.target.value)}
+                placeholder="Иван Петров"
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
+              />
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Фото тренера</label>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
+                <div className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 overflow-hidden">
                   {coachPhotoUrl ? (
-                    <img
-                      src={coachPhotoUrl}
-                      alt="Фото тренера"
-                      className="h-full w-full object-cover"
-                    />
+                    <>
+                      <img
+                        src={coachPhotoUrl}
+                        alt="Фото тренера"
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700 shadow"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCoachPhotoUrl(null);
+                          if (fileInputRef.current) fileInputRef.current.value = '';
+                        }}
+                        title="Удалить фото"
+                      >
+                        ×
+                      </button>
+                    </>
                   ) : (
                     <User className="h-12 w-12 text-gray-400" />
                   )}

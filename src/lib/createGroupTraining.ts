@@ -35,7 +35,7 @@ export async function createGroupTraining(data: CreateGroupTrainingInput): Promi
 
 export async function updateGroupTrainingCoachInfo(
   groupId: string,
-  data: { coachAbout?: string; coachPhotoUrl?: string }
+  data: { coachName?: string; coachAbout?: string; coachPhotoUrl?: string }
 ): Promise<void> {
   const docRef = doc(db, 'groupTrainings', groupId);
   await updateDoc(docRef, data);
@@ -51,6 +51,7 @@ export interface UpdateGroupTrainingInput {
   level?: GroupTraining['level'];
   priceSingle?: number;
   contact?: string;
+  coachName?: string;
   coachAbout?: string;
   coachPhotoUrl?: string;
 }

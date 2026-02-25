@@ -74,9 +74,11 @@ export function mapTrainingToGroup(training: GroupTraining): TennisGroup {
     ? `${training.groupSize} чел.` 
     : 'Группа';
 
+  const trainerDisplayName = training.coachName?.trim() || training.trainerName;
+
   return {
     id: training.id,
-    trainer: training.trainerName,
+    trainer: trainerDisplayName,
     trainerUserId: training.userId,
     location: training.courtName,
     date: date,
