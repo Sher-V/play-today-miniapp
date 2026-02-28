@@ -146,7 +146,7 @@ export function ProfileView({ profile, onBack, onEdit, onRegisterCoach, onVisibi
                 Статус профиля
               </p>
               <p className="mt-0.5 text-sm text-gray-700">
-                {isHidden ? 'Профиль скрыт из каталога' : 'Профиль виден в каталоге'}
+                {isHidden ? 'Профиль скрыт из каталога' : 'Ваш профиль и группы отображаются пользователям.'}
               </p>
             </div>
             {visibilityUpdating ? (
@@ -156,6 +156,7 @@ export function ProfileView({ profile, onBack, onEdit, onRegisterCoach, onVisibi
                 checked={!isHidden}
                 onCheckedChange={(checked) => handleVisibilityChange(!checked)}
                 disabled={visibilityUpdating}
+                className="data-[state=checked]:bg-green-500"
               />
             )}
           </div>
