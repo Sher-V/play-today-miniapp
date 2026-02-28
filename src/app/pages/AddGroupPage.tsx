@@ -1,11 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { GroupRegistrationFlow } from '../components/GroupRegistrationFlow';
+import { GroupRegistrationFlow, type TrainerAtCourt } from '../components/GroupRegistrationFlow';
 import { AfterGroupSubmitScreen } from '../components/AfterGroupSubmitScreen';
-import { AddClubTrainerForm } from '../components/AddClubTrainerForm';
+import { AddClubTrainerForm, type NewlyCreatedClubTrainer } from '../components/AddClubTrainerForm';
 import { Sheet, SheetContent } from '../components/ui/sheet';
 import { useTelegram } from '../../hooks/useTelegram';
 import type { GroupCreatorRole } from '../../lib/groupRegistrationStorage';
+
+function toTrainerAtCourt(t: NewlyCreatedClubTrainer): TrainerAtCourt {
+  return {
+    id: `c-${t.id}`,
+    clubTrainerId: t.id,
+    trainerName: t.coachName,
+    coachName: t.coachName,
+    contact: t.contact,
+    coachPhotoUrl: t.coachPhotoUrl,
+    coachAbout: t.coachAbout,
+  };
+}
 
 export function AddGroupPage() {
   const navigate = useNavigate();
@@ -16,6 +28,7 @@ export function AddGroupPage() {
   const [screen, setScreen] = useState<'form' | 'after'>('form');
   const [showAddClubTrainerSheet, setShowAddClubTrainerSheet] = useState(false);
   const [addClubTrainerInitialName, setAddClubTrainerInitialName] = useState<string | undefined>();
+  const [newlyCreatedTrainer, setNewlyCreatedTrainer] = useState<TrainerAtCourt | null>(null);
 
   const telegramUserName = [telegramUser?.first_name, telegramUser?.last_name]
     .filter(Boolean)
@@ -60,6 +73,8 @@ export function AddGroupPage() {
               }
             : undefined
         }
+        newlyCreatedTrainer={newlyCreatedTrainer}
+        onClearNewlyCreatedTrainer={() => setNewlyCreatedTrainer(null)}
       />
       <Sheet
         open={showAddClubTrainerSheet}
@@ -73,7 +88,8 @@ export function AddGroupPage() {
             <AddClubTrainerForm
               adminUserId={telegramUser.id}
               initialCoachName={addClubTrainerInitialName}
-              onSuccess={() => {
+              onSuccess={(trainer) => {
+                setNewlyCreatedTrainer(toTrainerAtCourt(trainer));
                 setShowAddClubTrainerSheet(false);
                 setAddClubTrainerInitialName(undefined);
               }}

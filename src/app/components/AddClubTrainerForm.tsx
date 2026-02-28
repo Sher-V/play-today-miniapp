@@ -9,9 +9,18 @@ import { toast } from 'sonner';
 const COACH_ABOUT_PLACEHOLDER =
   'Например: Опыт работы 10 лет, мастер спорта по теннису...';
 
+/** Данные созданного тренера — передаём во флоу, чтобы сразу выбрать его на шаге 3 */
+export interface NewlyCreatedClubTrainer {
+  id: string;
+  coachName: string;
+  contact: string;
+  coachPhotoUrl?: string;
+  coachAbout?: string;
+}
+
 interface AddClubTrainerFormProps {
   adminUserId: number;
-  onSuccess: () => void;
+  onSuccess: (trainer: NewlyCreatedClubTrainer) => void;
   onCancel: () => void;
   /** Подставить в поле имени при открытии */
   initialCoachName?: string;
@@ -29,11 +38,12 @@ export function AddClubTrainerForm({
     setCoachName(initialCoachName);
   }, [initialCoachName]);
   const [coachPhotoPreview, setCoachPhotoPreview] = useState<string | null>(null);
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
   const [coachAbout, setCoachAbout] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const photoFileRef = useRef<File | null>(null);
+  const uploadGenerationRef = useRef(0);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -42,14 +52,36 @@ export function AddClubTrainerForm({
       toast.error('Выберите изображение (JPG или PNG)');
       return;
     }
-    photoFileRef.current = file;
+    e.target.value = '';
+    if (coachPhotoPreview) URL.revokeObjectURL(coachPhotoPreview);
     setCoachPhotoPreview(URL.createObjectURL(file));
+    setUploadedPhotoUrl(null);
+    setUploadProgress(0);
+    uploadGenerationRef.current += 1;
+    const currentGen = uploadGenerationRef.current;
+    uploadClubTrainerPhoto(adminUserId, file, (percent) => setUploadProgress(percent))
+      .then((url) => {
+        if (currentGen === uploadGenerationRef.current) {
+          setUploadedPhotoUrl(url);
+          setUploadProgress(null);
+        }
+      })
+      .catch((err) => {
+        if (currentGen === uploadGenerationRef.current) {
+          setUploadProgress(null);
+          toast.error('Не удалось загрузить фото', {
+            description: err instanceof Error ? err.message : undefined,
+          });
+        }
+      });
   };
 
   const clearPhoto = () => {
+    uploadGenerationRef.current += 1;
     if (coachPhotoPreview) URL.revokeObjectURL(coachPhotoPreview);
     setCoachPhotoPreview(null);
-    photoFileRef.current = null;
+    setUploadedPhotoUrl(null);
+    setUploadProgress(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -64,32 +96,33 @@ export function AddClubTrainerForm({
       toast.error('Введите контакт тренера (телефон или Telegram)');
       return;
     }
+    if (coachPhotoPreview && uploadProgress != null) {
+      toast.error('Дождитесь окончания загрузки фото');
+      return;
+    }
     setSaving(true);
     try {
-      let photoUrl: string | undefined;
-      if (photoFileRef.current) {
-        setUploadProgress(0);
-        photoUrl = await uploadClubTrainerPhoto(adminUserId, photoFileRef.current, (percent) =>
-          setUploadProgress(percent)
-        );
-        setUploadProgress(null);
-      }
-      await createClubTrainer({
+      const id = await createClubTrainer({
         addedByUserId: adminUserId,
         coachName: name,
         contact: cont,
-        coachPhotoUrl: photoUrl,
+        coachPhotoUrl: uploadedPhotoUrl ?? undefined,
         coachAbout: coachAbout.trim() || undefined,
       });
       toast.success('Тренер добавлен в клуб. Теперь его можно выбрать при создании групп.');
-      onSuccess();
+      onSuccess({
+        id,
+        coachName: name,
+        contact: cont,
+        coachPhotoUrl: uploadedPhotoUrl ?? undefined,
+        coachAbout: coachAbout.trim() || undefined,
+      });
     } catch (e) {
       toast.error('Не удалось сохранить', {
         description: e instanceof Error ? e.message : undefined,
       });
     } finally {
       setSaving(false);
-      setUploadProgress(null);
     }
   };
 
@@ -160,10 +193,9 @@ export function AddClubTrainerForm({
                   )}
                   <button
                     type="button"
-                    className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700 shadow disabled:opacity-50"
+                    className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700 shadow"
                     onClick={clearPhoto}
                     title="Удалить фото"
-                    disabled={uploadProgress != null}
                   >
                     ×
                   </button>
@@ -222,7 +254,7 @@ export function AddClubTrainerForm({
         <Button
           className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || (coachPhotoPreview != null && uploadProgress != null)}
         >
           {saving ? (
             <>

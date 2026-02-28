@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format, addMonths } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Check, ChevronLeft, Clock, User, UserPlus } from 'lucide-react';
@@ -11,7 +11,6 @@ import { toast } from 'sonner';
 import { setStoredGroupRole, type GroupCreatorRole } from '../../lib/groupRegistrationStorage';
 import { createGroupTraining } from '../../lib/createGroupTraining';
 import type { GroupTraining } from '../../lib/types';
-import { useGroupTrainings } from '../../hooks/useGroupTrainings';
 import { useClubTrainers } from '../../hooks/useClubTrainers';
 
 const LEVEL_OPTIONS: { value: GroupTraining['level']; label: string }[] = [
@@ -75,6 +74,9 @@ interface GroupRegistrationFlowProps {
   onBack: () => void;
   /** Открыть форму добавления тренера в клуб. initialName — подставить в поле имени */
   onAddClubTrainerRequest?: (initialName?: string) => void;
+  /** Только что созданный в шторке тренер — сразу подставляем в шаг 3 */
+  newlyCreatedTrainer?: TrainerAtCourt | null;
+  onClearNewlyCreatedTrainer?: () => void;
 }
 
 export function GroupRegistrationFlow({
@@ -83,45 +85,32 @@ export function GroupRegistrationFlow({
   onSuccess,
   onBack,
   onAddClubTrainerRequest,
+  newlyCreatedTrainer,
+  onClearNewlyCreatedTrainer,
 }: GroupRegistrationFlowProps) {
   const [formData, setFormData] = useState<GroupFormData>(defaultFormData);
+
+  useEffect(() => {
+    if (!newlyCreatedTrainer) return;
+    setFormData((prev) => ({
+      ...prev,
+      selectedTrainer: newlyCreatedTrainer,
+      trainerSearchQuery: newlyCreatedTrainer.coachName || newlyCreatedTrainer.trainerName,
+    }));
+    onClearNewlyCreatedTrainer?.();
+  }, [newlyCreatedTrainer, onClearNewlyCreatedTrainer]);
 
   const [submitting, setSubmitting] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [trainerInputFocused, setTrainerInputFocused] = useState(false);
 
   const isAdmin = formData.role === 'admin';
-  const { trainings: allTrainings } = useGroupTrainings(isAdmin);
   const { trainers: clubTrainers } = useClubTrainers(telegramUserId, isAdmin);
+  // На шаге 3 — только тренеры, привязанные к этому клубу (добавленные этим админом по telegramId)
   const trainersAtCourt = useMemo(() => {
     if (!isAdmin) return [];
-    const result: TrainerAtCourt[] = [];
-    const court = formData.courtName.trim().toLowerCase();
-
-    if (court.length >= 2) {
-      const byUserId = new Map<number, TrainerAtCourt>();
-      for (const t of allTrainings) {
-        if (!t.isActive || !t.courtName) continue;
-        if (t.courtName.trim().toLowerCase().includes(court) || court.includes(t.courtName.trim().toLowerCase())) {
-          const trainerId = t.coachUserId ?? t.userId;
-          const name = (t.coachName?.trim() || t.trainerName).trim();
-          if (!name) continue;
-          if (!byUserId.has(trainerId)) {
-            byUserId.set(trainerId, {
-              id: `u-${trainerId}`,
-              userId: trainerId,
-              trainerName: t.trainerName,
-              coachName: t.coachName,
-              contact: t.contact,
-            });
-          }
-        }
-      }
-      result.push(...Array.from(byUserId.values()));
-    }
-
-    for (const ct of clubTrainers) {
-      result.push({
+    return clubTrainers
+      .map((ct) => ({
         id: `c-${ct.id}`,
         clubTrainerId: ct.id,
         trainerName: ct.coachName,
@@ -129,13 +118,11 @@ export function GroupRegistrationFlow({
         contact: ct.contact,
         coachPhotoUrl: ct.coachPhotoUrl,
         coachAbout: ct.coachAbout,
-      });
-    }
-
-    return result.sort((a, b) =>
-      (a.coachName || a.trainerName).localeCompare(b.coachName || b.trainerName)
-    );
-  }, [isAdmin, formData.courtName, allTrainings, clubTrainers]);
+      }))
+      .sort((a, b) =>
+        (a.coachName || a.trainerName).localeCompare(b.coachName || b.trainerName)
+      );
+  }, [isAdmin, clubTrainers]);
 
   const trainerSearch = (formData.trainerSearchQuery ?? '').trim().toLowerCase();
   const filteredTrainers = useMemo(() => {
