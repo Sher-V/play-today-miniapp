@@ -235,14 +235,14 @@ export default function App() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="shrink-0 min-w-10 min-h-10 touch-manipulation"
+                className="shrink-0 min-w-12 min-h-12 touch-manipulation"
                 onClick={() => {
                   hapticFeedback('light');
                   setIsMenuOpen(true);
                 }}
                 aria-label="Открыть меню"
               >
-                <Menu className="h-6 w-6 text-gray-700" />
+                <Menu className="h-8 w-8 text-gray-900" strokeWidth={2.5} />
               </Button>
               <SheetContent side="right" className="w-64">
                 <div className="flex flex-col gap-1 pt-4">
