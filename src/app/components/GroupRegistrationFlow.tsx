@@ -137,39 +137,38 @@ export function GroupRegistrationFlow({
   }, [isAdmin, formData.courtName, allTrainings, clubTrainers]);
 
   const canProceedStep0 = formData.role != null;
+  const canProceedCourt = formData.courtName.trim().length > 0;
   const adminTrainerOk =
-    !isAdmin ||
     formData.coachChoice === 'new' ||
     (formData.coachChoice === 'existing' && formData.selectedTrainer != null);
-  const canProceedStep1 = formData.courtName.trim().length > 0 && adminTrainerOk;
   const isValidTime = /^\d{2}:\d{2}$/.test(formData.time);
-  const canProceedStep2 = formData.date != null && isValidTime;
-  const canProceedStep3 = formData.isRecurring !== null;
-  const canProceedStep4 = formData.duration > 0;
-  const canProceedStep5 = formData.groupSize === '3-4' || formData.groupSize === '5-6';
-  const canProceedStep6 = formData.level != null;
-  const canProceedStep7 = /^\d+$/.test(formData.priceSingle) && Number(formData.priceSingle) >= 0;
+  const canProceedDate = formData.date != null && isValidTime;
+  const canProceedRecurring = formData.isRecurring !== null;
+  const canProceedDuration = formData.duration > 0;
+  const canProceedGroupSize = formData.groupSize === '3-4' || formData.groupSize === '5-6';
+  const canProceedLevel = formData.level != null;
+  const canProceedPrice = /^\d+$/.test(formData.priceSingle) && Number(formData.priceSingle) >= 0;
   const contactOk =
     (isAdmin && formData.selectedTrainer
       ? formData.selectedTrainer.contact
       : formData.contact.trim()
     ).length > 0;
-  const canProceedStep8 = contactOk;
 
   const stepChecks = [
     canProceedStep0,
-    canProceedStep1,
-    canProceedStep2,
-    canProceedStep3,
-    canProceedStep4,
-    canProceedStep5,
-    canProceedStep6,
-    canProceedStep7,
-    canProceedStep8,
+    canProceedCourt,
+    ...(isAdmin ? [adminTrainerOk] : []),
+    canProceedDate,
+    canProceedRecurring,
+    canProceedDuration,
+    canProceedGroupSize,
+    canProceedLevel,
+    canProceedPrice,
+    contactOk,
   ];
 
   const maxUnlockedStep = stepChecks.findIndex((ok) => !ok);
-  const unlockedUntil = maxUnlockedStep === -1 ? 8 : maxUnlockedStep;
+  const unlockedUntil = maxUnlockedStep === -1 ? stepChecks.length - 1 : maxUnlockedStep;
 
   const handleSubmit = async () => {
     const effectiveContact =
@@ -265,7 +264,7 @@ export function GroupRegistrationFlow({
         </Button>
       </div>
     </div>,
-    /* Step 1 */
+    /* Step 1 — место проведения */
     <div key="1" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
       <h3 className="font-semibold text-sm text-gray-900">Шаг 2</h3>
       <Label className="text-xs text-gray-600">Где проходит тренировка?</Label>
@@ -281,82 +280,82 @@ export function GroupRegistrationFlow({
         }
         className="h-9 border-gray-300 bg-white focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20"
       />
-      {isAdmin && (
-        <div className="space-y-2 pt-2 border-t border-gray-100">
-          {onAddClubTrainerRequest && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 -ml-1 mb-1"
-              onClick={onAddClubTrainerRequest}
-            >
-              <UserPlus className="mr-1.5 h-4 w-4" />
-              Добавить тренера в клуб
-            </Button>
-          )}
-          {formData.courtName.trim().length >= 2 && (
-            <>
-          <Label className="text-xs text-gray-600">Тренер</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant={formData.coachChoice === 'new' ? 'primary' : 'outline'}
-              size="sm"
-              className="h-9 justify-start gap-2"
-              onClick={() =>
-                setFormData((p) => ({ ...p, coachChoice: 'new', selectedTrainer: null }))
-              }
-            >
-              <UserPlus className="h-4 w-4 shrink-0" />
-              Новый
-            </Button>
-            <Button
-              variant={formData.coachChoice === 'existing' ? 'primary' : 'outline'}
-              size="sm"
-              className="h-9 justify-start gap-2"
-              onClick={() =>
-                setFormData((p) => ({
-                  ...p,
-                  coachChoice: 'existing',
-                  selectedTrainer: trainersAtCourt[0] ?? null,
-                }))
-              }
-            >
-              <User className="h-4 w-4 shrink-0" />
-              Существующий
-            </Button>
-          </div>
-          {formData.coachChoice === 'existing' && trainersAtCourt.length > 0 && (
-            <select
-              value={formData.selectedTrainer?.id ?? ''}
-              onChange={(e) => {
-                const id = e.target.value;
-                const t = trainersAtCourt.find((x) => x.id === id);
-                setFormData((p) => ({ ...p, selectedTrainer: t ?? null }));
-              }}
-              className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="">Выберите тренера</option>
-              {trainersAtCourt.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.coachName || t.trainerName} — {t.contact}
-                </option>
-              ))}
-            </select>
-          )}
-          {formData.coachChoice === 'existing' && trainersAtCourt.length === 0 && (
-            <p className="text-xs text-amber-600">
-              На этом корте пока нет групп и тренеров клуба. Выберите «Новый» или добавьте тренера в клуб выше.
-            </p>
-          )}
-            </>
-          )}
-        </div>
-      )}
     </div>,
-    /* Step 2 */
+    /* Step 2 — тренер (только для админа) */
+    ...(isAdmin
+      ? [
+          <div key="trainer" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
+            <h3 className="font-semibold text-sm text-gray-900">Шаг 3</h3>
+            <Label className="text-xs text-gray-600">Тренер группы</Label>
+            {onAddClubTrainerRequest && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 -ml-1 mb-1"
+                onClick={onAddClubTrainerRequest}
+              >
+                <UserPlus className="mr-1.5 h-4 w-4" />
+                Добавить тренера в клуб
+              </Button>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={formData.coachChoice === 'new' ? 'primary' : 'outline'}
+                size="sm"
+                className="h-9 justify-start gap-2"
+                onClick={() =>
+                  setFormData((p) => ({ ...p, coachChoice: 'new', selectedTrainer: null }))
+                }
+              >
+                <UserPlus className="h-4 w-4 shrink-0" />
+                Новый
+              </Button>
+              <Button
+                variant={formData.coachChoice === 'existing' ? 'primary' : 'outline'}
+                size="sm"
+                className="h-9 justify-start gap-2"
+                onClick={() =>
+                  setFormData((p) => ({
+                    ...p,
+                    coachChoice: 'existing',
+                    selectedTrainer: trainersAtCourt[0] ?? null,
+                  }))
+                }
+              >
+                <User className="h-4 w-4 shrink-0" />
+                Существующий
+              </Button>
+            </div>
+            {formData.coachChoice === 'existing' && trainersAtCourt.length > 0 && (
+              <select
+                value={formData.selectedTrainer?.id ?? ''}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  const t = trainersAtCourt.find((x) => x.id === id);
+                  setFormData((p) => ({ ...p, selectedTrainer: t ?? null }));
+                }}
+                className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              >
+                <option value="">Выберите тренера</option>
+                {trainersAtCourt.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.coachName || t.trainerName} — {t.contact}
+                  </option>
+                ))}
+              </select>
+            )}
+            {formData.coachChoice === 'existing' && trainersAtCourt.length === 0 && (
+              <p className="text-xs text-amber-600">
+                На корте пока нет групп и тренеров клуба. Выберите «Новый» или добавьте тренера в клуб выше.
+              </p>
+            )}
+          </div>,
+        ]
+      : []),
+    /* Step 3 — дата и время */
     <div key="2" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 3</h3>
+      <h3 className="font-semibold text-sm text-gray-900">{isAdmin ? 'Шаг 4' : 'Шаг 3'}</h3>
       <Label className="text-xs text-gray-600">Дата и время занятия</Label>
       <div className="flex flex-wrap gap-2 items-start">
         <div className="flex flex-col gap-2">
@@ -410,9 +409,9 @@ export function GroupRegistrationFlow({
         </div>
       </div>
     </div>,
-    /* Step 3 */
+    /* Step 4 — регулярность */
     <div key="3" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 4</h3>
+      <h3 className="font-semibold text-sm text-gray-900">{isAdmin ? 'Шаг 5' : 'Шаг 4'}</h3>
       <Label className="text-xs text-gray-600">Есть ли место в группе на регулярной основе?</Label>
       <div className="grid grid-cols-2 gap-2">
         <Button
@@ -433,9 +432,9 @@ export function GroupRegistrationFlow({
         </Button>
       </div>
     </div>,
-    /* Step 4 */
+    /* Step 5 — длительность */
     <div key="4" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 5</h3>
+      <h3 className="font-semibold text-sm text-gray-900">{isAdmin ? 'Шаг 6' : 'Шаг 5'}</h3>
       <Label className="text-xs text-gray-600">Длительность тренировки</Label>
       <div className="grid grid-cols-3 gap-2">
         {DURATION_OPTIONS.map((d) => (
@@ -451,9 +450,9 @@ export function GroupRegistrationFlow({
         ))}
       </div>
     </div>,
-    /* Step 5 */
+    /* Step 6 — размер группы */
     <div key="5" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 6</h3>
+      <h3 className="font-semibold text-sm text-gray-900">{isAdmin ? 'Шаг 7' : 'Шаг 6'}</h3>
       <Label className="text-xs text-gray-600">Сколько людей может заниматься в группе?</Label>
       <div className="grid grid-cols-2 gap-2">
         {GROUP_SIZE_OPTIONS.map((s) => (
@@ -469,9 +468,9 @@ export function GroupRegistrationFlow({
         ))}
       </div>
     </div>,
-    /* Step 6 */
+    /* Step 7 — уровень */
     <div key="6" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 7</h3>
+      <h3 className="font-semibold text-sm text-gray-900">{isAdmin ? 'Шаг 8' : 'Шаг 7'}</h3>
       <Label className="text-xs text-gray-600">Уровень группы</Label>
       <div className="grid grid-cols-2 gap-2 [&_button]:min-h-9 [&_button]:h-auto [&_button]:whitespace-normal [&_button]:py-2 [&_button]:text-center [&_button]:leading-tight">
         {LEVEL_OPTIONS.map((opt) => {
@@ -500,9 +499,9 @@ export function GroupRegistrationFlow({
         })}
       </div>
     </div>,
-    /* Step 7 */
+    /* Step 8 — цена */
     <div key="7" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 8</h3>
+      <h3 className="font-semibold text-sm text-gray-900">{isAdmin ? 'Шаг 9' : 'Шаг 8'}</h3>
       <Label className="text-xs text-gray-600">Стоимость пробного занятия для человека (₽)</Label>
       <Input
         type="text"
@@ -513,9 +512,9 @@ export function GroupRegistrationFlow({
         className="h-9"
       />
     </div>,
-    /* Step 8 */
+    /* Step 9 — контакт */
     <div key="8" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 9</h3>
+      <h3 className="font-semibold text-sm text-gray-900">{isAdmin ? 'Шаг 10' : 'Шаг 9'}</h3>
       <Label className="text-xs text-gray-600">Ваши контакты</Label>
       <Input
         placeholder="Телефон или @username"
@@ -559,7 +558,7 @@ export function GroupRegistrationFlow({
         <Button
           className="flex-1 bg-blue-600 hover:bg-blue-700"
           onClick={handleSubmit}
-          disabled={unlockedUntil < 8 || !canProceedStep8 || submitting}
+          disabled={unlockedUntil < stepChecks.length - 1 || submitting}
         >
           {submitting ? 'Отправка...' : 'Готово'}
         </Button>
