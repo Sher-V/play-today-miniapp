@@ -118,6 +118,7 @@ export function ProfilePage() {
       profile={displayProfile}
       onBack={() => navigate('/')}
       onEdit={() => setIsEditMode(true)}
+      onRegisterCoach={() => navigate('/register-coach')}
     />
   );
 }

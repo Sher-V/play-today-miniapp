@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, MapPin, Calendar, MessageCircle, Pencil, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Calendar, MessageCircle, Pencil, Users, UserPlus } from 'lucide-react';
 import Slider from 'react-slick';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -8,6 +8,8 @@ interface ProfileViewProps {
   profile: UserProfile;
   onBack: () => void;
   onEdit: () => void;
+  /** При пустом профиле — переход на страницу регистрации тренера */
+  onRegisterCoach?: () => void;
 }
 
 const MediaPrevArrow = (props: { onClick?: () => void } & Record<string, unknown>) => {
@@ -40,7 +42,7 @@ const MediaNextArrow = (props: { onClick?: () => void } & Record<string, unknown
   );
 };
 
-export function ProfileView({ profile, onBack, onEdit }: ProfileViewProps) {
+export function ProfileView({ profile, onBack, onEdit, onRegisterCoach }: ProfileViewProps) {
   const hasCoachData = profile.isCoach || profile.coachName;
   const media = profile.coachMedia?.filter((m) => m.publicUrl) ?? [];
   const firstPhoto = media.find((m) => m.type === 'photo' && m.publicUrl)?.publicUrl;
@@ -67,11 +69,11 @@ export function ProfileView({ profile, onBack, onEdit }: ProfileViewProps) {
             </p>
             <Button
               className="mt-6 bg-white text-blue-600 hover:bg-blue-50 shadow-lg"
-              onClick={onEdit}
+              onClick={onRegisterCoach ?? onEdit}
               size="lg"
             >
-              <Pencil className="mr-2 h-4 w-4" />
-              Готово
+              <UserPlus className="mr-2 h-4 w-4" />
+              Зарегистрироваться как тренер
             </Button>
           </div>
         </div>
