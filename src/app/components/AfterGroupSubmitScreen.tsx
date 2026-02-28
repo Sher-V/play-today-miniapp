@@ -81,23 +81,23 @@ export function AfterGroupSubmitScreen({
       </div>
 
       {/* Шаг 1: Зелёный — успешная регистрация группы */}
-      <div className="flex items-start gap-3 rounded-lg border border-green-300 bg-green-50 p-4">
+      <div className="flex items-center gap-3 rounded-lg border border-green-300 bg-green-50 p-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500">
           <CheckCircle className="h-6 w-6 text-white" />
         </div>
-        <p className="pt-0.5 text-sm font-medium text-gray-900">
-          Группа успешно зарегистрирована{!showCoachRegistration && ' и будет отображаться пользователям! 🎉'}
+        <p className="text-sm font-medium text-gray-900">
+          Группа успешно зарегистрирована{!showCoachRegistration ? ' и будет отображаться пользователям! 🎉' : '!'}
         </p>
       </div>
 
       {/* Шаг 2: Жёлтый — нужно ещё кое-что сделать (только для тренера без профиля) */}
       {showCoachRegistration && (
-        <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
+        <div className="flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500">
             <AlertTriangle className="h-6 w-6 text-white" />
           </div>
-          <p className="pt-0.5 text-sm font-medium text-gray-900">
-            Пока группа не отображается пользователям — пройдите регистрацию тренера, чтобы она появилась в каталоге.
+          <p className="text-sm font-medium text-gray-900">
+            Зарегистрируйтесь как тренер — и группа появится в каталоге для игроков.
           </p>
         </div>
       )}
@@ -241,14 +241,9 @@ export function AfterGroupSubmitScreen({
               Осталось ещё чуть-чуть!
             </h2>
 
-            <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
-              <p>
-                Для корректного отображения группы для пользователей с вашим фото и именем, просим пройти регистрацию в сервисе Play Today.
-              </p>
-              <p>
-                Это займёт 1 минуту. Вы также по своему желанию сможете предлагать игрокам индивидуальные и сплит тренировки. Сейчас это для вас бесплатно.
-              </p>
-            </div>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              Это займёт 1 минуту. Вы также по своему желанию сможете предлагать игрокам индивидуальные и сплит тренировки. Сейчас это для вас бесплатно.
+            </p>
 
             <Button
               className="h-auto min-h-[3rem] w-full whitespace-normal py-4 text-center text-base font-semibold leading-tight bg-blue-600 hover:bg-blue-700"
