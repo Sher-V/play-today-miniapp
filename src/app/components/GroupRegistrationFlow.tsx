@@ -93,7 +93,6 @@ export function GroupRegistrationFlow({
   const isAdmin = formData.role === 'admin';
   const { trainings: allTrainings } = useGroupTrainings(isAdmin);
   const { trainers: clubTrainers } = useClubTrainers(telegramUserId, isAdmin);
-
   const trainersAtCourt = useMemo(() => {
     if (!isAdmin) return [];
     const result: TrainerAtCourt[] = [];
@@ -335,8 +334,9 @@ export function GroupRegistrationFlow({
               )}
             </div>
             {formData.selectedTrainer && (
-              <p className="text-xs text-green-600">
-                Отлично, данный тренер уже зарегистрирован
+              <p className="flex items-center gap-1.5 text-xs text-green-600">
+                <Check className="h-4 w-4 shrink-0" strokeWidth={3} />
+                Тренер найден
               </p>
             )}
             {filteredTrainers.length === 0 &&
