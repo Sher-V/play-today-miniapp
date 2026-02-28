@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Check, ChevronLeft, CheckCircle, Image, Video, Upload } from 'lucide-react';
+import { uploadCoachMediaFile } from '../../lib/saveCoachProfile';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -33,6 +34,8 @@ export interface CoachFormData {
   videoFile?: File | null;
   /** Существующие медиа (при редактировании), которые сохраняем */
   existingCoachMedia?: import('../../lib/types').CoachMediaItem[];
+  /** Уже загруженные в Storage медиа (загрузка при выборе файла) */
+  newCoachMediaItems?: import('../../lib/types').CoachMediaItem[];
 }
 
 const defaultCoachForm: CoachFormData = {
@@ -55,9 +58,8 @@ interface CoachRegistrationFlowProps {
   };
   /** Текст заголовка и кнопки в режиме редактирования */
   isEditMode?: boolean;
-  /** Прогресс загрузки медиа (0–100), показываем лоадер поверх фото/видео */
-  uploadProgress?: number | null;
-  uploadLabel?: string;
+  /** Telegram userId — нужен для загрузки фото/видео сразу после выбора */
+  userId?: string;
 }
 
 export function CoachRegistrationFlow({
@@ -65,8 +67,7 @@ export function CoachRegistrationFlow({
   onSubmit,
   initialData,
   isEditMode,
-  uploadProgress = null,
-  uploadLabel,
+  userId,
 }: CoachRegistrationFlowProps) {
   const initialForm = initialData
     ? {
@@ -83,15 +84,43 @@ export function CoachRegistrationFlow({
 
   const [formData, setFormData] = useState<CoachFormData>({ ...defaultCoachForm, ...initialForm });
   const [submitting, setSubmitting] = useState(false);
-  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
+  type PhotoItem = { id: string; file: File; objectUrl: string; progress: number; publicUrl?: string };
+  // type VideoItem = { file: File; progress: number; publicUrl?: string };
+  const [photoItems, setPhotoItems] = useState<PhotoItem[]>([]);
+  // const [videoItem, setVideoItem] = useState<VideoItem | null>(null);
   const [keptExistingUrls, setKeptExistingUrls] = useState<Set<string>>(() => {
     const urls = new Set<string>();
     initialData?.existingCoachMedia?.forEach((m) => m.publicUrl && urls.add(m.publicUrl));
     return urls;
   });
   const photoInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
+  // const videoInputRef = useRef<HTMLInputElement>(null);
+
+  const startPhotoUpload = (id: string, file: File) => {
+    if (!userId) return;
+    uploadCoachMediaFile(userId, file, 'photo', (pct) => {
+      setPhotoItems((prev) => prev.map((p) => (p.id === id ? { ...p, progress: pct } : p)));
+    })
+      .then((publicUrl) => {
+        setPhotoItems((prev) => prev.map((p) => (p.id === id ? { ...p, progress: 100, publicUrl } : p)));
+      })
+      .catch(() => {
+        setPhotoItems((prev) => prev.map((p) => (p.id === id ? { ...p, progress: -1 } : p)));
+      });
+  };
+
+  // const startVideoUpload = (file: File) => {
+  //   if (!userId) return;
+  //   uploadCoachMediaFile(userId, file, 'video', (pct) => {
+  //     setVideoItem((prev) => (prev ? { ...prev, progress: pct } : null));
+  //   })
+  //     .then((publicUrl) => {
+  //       setVideoItem((prev) => (prev ? { ...prev, progress: 100, publicUrl } : null));
+  //     })
+  //     .catch(() => {
+  //       setVideoItem((prev) => (prev ? { ...prev, progress: -1 } : null));
+  //     });
+  // };
 
   const toggleDistrict = (id: string) => {
     setFormData((p) => ({
@@ -123,20 +152,30 @@ export function CoachRegistrationFlow({
   const unlockedUntil = stepChecks.findIndex((ok) => !ok);
   const allValid = unlockedUntil === -1 && canStep1 && canStep2 && canStep3 && canStep4 && canStep5 && canStep6 && canStep7;
 
+  const newMediaReady = photoItems.every((p) => p.publicUrl);
+  // && (videoItem == null || !!videoItem.publicUrl);
+  const hasUploadError = photoItems.some((p) => p.progress === -1); // || (videoItem?.progress === -1);
+  const canSubmitMedia = photoItems.length === 0 || (newMediaReady && !hasUploadError);
+  // (photoItems.length === 0 && !videoItem) || (newMediaReady && !hasUploadError);
+
   const handleSubmit = async () => {
-    if (!allValid) return;
+    if (!allValid || !canSubmitMedia) return;
     setSubmitting(true);
     try {
       const keptExisting =
         initialData?.existingCoachMedia?.filter(
           (m) => m.publicUrl && keptExistingUrls.has(m.publicUrl)
         ) ?? [];
+      const now = new Date().toISOString();
+      const newCoachMediaItems: import('../../lib/types').CoachMediaItem[] = [
+        ...photoItems.filter((p) => p.publicUrl).map((p) => ({ type: 'photo' as const, publicUrl: p.publicUrl!, uploadedAt: now })),
+        // ...(videoItem?.publicUrl ? [{ type: 'video' as const, publicUrl: videoItem.publicUrl, uploadedAt: now }] : []),
+      ];
       await onSubmit({
         ...formData,
         coachContact: formData.coachContact?.trim() || undefined,
-        photoFiles: photoFiles.length > 0 ? photoFiles : undefined,
-        videoFile: videoFile ?? undefined,
         existingCoachMedia: keptExisting.length > 0 ? keptExisting : undefined,
+        newCoachMediaItems: newCoachMediaItems.length > 0 ? newCoachMediaItems : undefined,
       });
     } finally {
       setSubmitting(false);
@@ -403,37 +442,61 @@ export function CoachRegistrationFlow({
               className="hidden"
               onChange={(e) => {
                 const files = e.target.files ? Array.from(e.target.files) : [];
-                setPhotoFiles((prev) => [...prev, ...files].slice(0, 4));
+                const added: PhotoItem[] = files.slice(0, 4 - photoItems.length).map((file) => ({
+                  id: crypto.randomUUID(),
+                  file,
+                  objectUrl: URL.createObjectURL(file),
+                  progress: 0,
+                }));
+                setPhotoItems((prev) => [...prev, ...added]);
                 e.target.value = '';
+                added.forEach((item) => startPhotoUpload(item.id, item.file));
               }}
             />
-            {photoFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2 relative">
-                {uploadProgress != null && (
-                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-lg bg-black/60">
-                    <div className="h-2 w-32 rounded-full bg-white/30 overflow-hidden">
-                      <div
-                        className="h-full bg-white rounded-full transition-all duration-200"
-                        style={{ width: `${uploadProgress}%` }}
+            {photoItems.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {photoItems.map((item, i) => (
+                  <div key={item.id} className="relative">
+                    <div className="h-20 w-20 rounded-lg border border-gray-200 overflow-hidden bg-gray-100">
+                      <img
+                        src={item.objectUrl}
+                        alt=""
+                        className="h-full w-full object-cover"
                       />
+                      {(item.progress < 100 && item.progress >= 0) || item.progress === -1 ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60">
+                          {item.progress === -1 ? (
+                            <span className="text-xs text-red-300">Ошибка</span>
+                          ) : (
+                            <>
+                              <svg className="h-10 w-10 -rotate-90" viewBox="0 0 36 36">
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
+                                <circle
+                                  cx="18"
+                                  cy="18"
+                                  r="16"
+                                  fill="none"
+                                  stroke="white"
+                                  strokeWidth="3"
+                                  strokeDasharray={2 * Math.PI * 16}
+                                  strokeDashoffset={2 * Math.PI * 16 * (1 - item.progress / 100)}
+                                  strokeLinecap="round"
+                                  className="transition-[stroke-dashoffset] duration-200"
+                                />
+                              </svg>
+                              <span className="mt-0.5 text-xs font-medium text-white">{item.progress}%</span>
+                            </>
+                          )}
+                        </div>
+                      ) : null}
                     </div>
-                    <span className="mt-2 text-sm font-medium text-white">
-                      {uploadLabel ?? 'Загрузка'} {uploadProgress}%
-                    </span>
-                  </div>
-                )}
-                {photoFiles.map((file, i) => (
-                  <div key={i} className="relative">
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt=""
-                      className="h-20 w-20 rounded-lg border border-gray-200 object-cover"
-                    />
                     <button
                       type="button"
-                      className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-white disabled:opacity-50"
-                      onClick={() => setPhotoFiles((p) => p.filter((_, j) => j !== i))}
-                      disabled={uploadProgress != null}
+                      className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700"
+                      onClick={() => {
+                        URL.revokeObjectURL(item.objectUrl);
+                        setPhotoItems((p) => p.filter((q) => q.id !== item.id));
+                      }}
                     >
                       ×
                     </button>
@@ -452,8 +515,8 @@ export function CoachRegistrationFlow({
             </Button>
           </div>
 
-          {/* Видео */}
-          <div className="space-y-2">
+          {/* Видео — пока отключено, оставлен только фото */}
+          {/* <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Video className="h-4 w-4 text-blue-600" />
               <Label className="text-sm font-medium text-gray-900">Видео</Label>
@@ -465,37 +528,55 @@ export function CoachRegistrationFlow({
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                setVideoFile(file ?? null);
-                e.target.value = '';
+                if (file) {
+                  setVideoItem({ file, progress: 0 });
+                  e.target.value = '';
+                  startVideoUpload(file);
+                }
               }}
             />
-            {videoFile && (
-              <div className="flex items-center gap-2 relative">
-                {uploadProgress != null && (
-                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-lg bg-black/60 py-2">
-                    <div className="h-2 w-32 rounded-full bg-white/30 overflow-hidden">
-                      <div
-                        className="h-full bg-white rounded-full transition-all duration-200"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
+            {videoItem && (
+              <div className="flex items-center gap-2">
+                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-100 overflow-hidden">
+                  <Video className="h-6 w-6 text-gray-400" />
+                  {(videoItem.progress < 100 && videoItem.progress >= 0) || videoItem.progress === -1 ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60">
+                      {videoItem.progress === -1 ? (
+                        <span className="text-xs text-red-300">Ошибка</span>
+                      ) : (
+                        <>
+                          <svg className="h-8 w-8 -rotate-90" viewBox="0 0 36 36">
+                            <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
+                            <circle
+                              cx="18"
+                              cy="18"
+                              r="16"
+                              fill="none"
+                              stroke="white"
+                              strokeWidth="3"
+                              strokeDasharray={2 * Math.PI * 16}
+                              strokeDashoffset={2 * Math.PI * 16 * (1 - videoItem.progress / 100)}
+                              strokeLinecap="round"
+                              className="transition-[stroke-dashoffset] duration-200"
+                            />
+                          </svg>
+                          <span className="mt-0.5 text-xs font-medium text-white">{videoItem.progress}%</span>
+                        </>
+                      )}
                     </div>
-                    <span className="mt-2 text-sm font-medium text-white">
-                      {uploadLabel ?? 'Загрузка'} {uploadProgress}%
-                    </span>
-                  </div>
-                )}
+                  ) : null}
+                </div>
                 <p className="flex-1 truncate text-sm text-gray-600">
-                  Выбрано: {videoFile.name}
+                  {videoItem.file.name}
                 </p>
                 <button
                   type="button"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-50"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700"
                   onClick={() => {
-                    setVideoFile(null);
+                    setVideoItem(null);
                     if (videoInputRef.current) videoInputRef.current.value = '';
                   }}
                   title="Удалить видео"
-                  disabled={uploadProgress != null}
                 >
                   ×
                 </button>
@@ -510,7 +591,7 @@ export function CoachRegistrationFlow({
               <Upload className="h-5 w-5 shrink-0 text-blue-600" />
               Загрузить видео
             </Button>
-          </div>
+          </div> */}
         </div>
       ),
       canProceed: true,
@@ -579,7 +660,7 @@ export function CoachRegistrationFlow({
         <Button
           className="flex-1 bg-blue-600 hover:bg-blue-700"
           onClick={handleSubmit}
-          disabled={!allValid || submitting}
+          disabled={!allValid || !canSubmitMedia || submitting}
         >
           {submitting ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Готово'}
         </Button>

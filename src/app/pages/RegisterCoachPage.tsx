@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router';
 import { CoachRegistrationFlow } from '../components/CoachRegistrationFlow';
 import { useTelegram } from '../../hooks/useTelegram';
@@ -8,16 +8,14 @@ import { saveCoachProfile } from '../../lib/saveCoachProfile';
 
 export function RegisterCoachPage() {
   const navigate = useNavigate();
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [uploadLabel, setUploadLabel] = useState<string>('');
   const { user: telegramUser, hapticFeedback } = useTelegram();
+  const userId = telegramUser?.id != null ? String(telegramUser.id) : undefined;
 
   const telegramUserName = [telegramUser?.first_name, telegramUser?.last_name]
     .filter(Boolean)
     .join(' ') || 'Тренер';
 
   const handleSubmit = async (data: CoachFormData) => {
-    const userId = telegramUser?.id != null ? String(telegramUser.id) : null;
     const coachName = telegramUserName || data.name;
     if (!userId) {
       toast.error('Не удалось определить пользователя', {
@@ -27,10 +25,7 @@ export function RegisterCoachPage() {
     }
     try {
       await saveCoachProfile(userId, coachName, data, {
-        onProgress: (percent, label) => {
-          setUploadProgress(percent);
-          setUploadLabel(label);
-        },
+        newCoachMediaItems: data.newCoachMediaItems,
       });
       hapticFeedback('success');
       toast.success('Профиль тренера сохранён');
@@ -40,9 +35,6 @@ export function RegisterCoachPage() {
       toast.error('Не удалось сохранить профиль', {
         description: e instanceof Error ? e.message : 'Проверьте настройки Firebase и авторизацию.',
       });
-    } finally {
-      setUploadProgress(null);
-      setUploadLabel('');
     }
   };
 
@@ -50,8 +42,7 @@ export function RegisterCoachPage() {
     <CoachRegistrationFlow
       onBack={() => navigate('/')}
       onSubmit={handleSubmit}
-      uploadProgress={uploadProgress}
-      uploadLabel={uploadLabel}
+      userId={userId}
     />
   );
 }

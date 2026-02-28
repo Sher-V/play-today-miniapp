@@ -140,13 +140,22 @@ export function AddClubTrainerForm({
                   />
                   {uploadProgress != null && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-lg">
-                      <div className="h-1.5 w-14 rounded-full bg-white/30 overflow-hidden">
-                        <div
-                          className="h-full bg-white rounded-full transition-all duration-200"
-                          style={{ width: `${uploadProgress}%` }}
+                      <svg className="h-10 w-10 -rotate-90" viewBox="0 0 36 36">
+                        <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
+                        <circle
+                          cx="18"
+                          cy="18"
+                          r="16"
+                          fill="none"
+                          stroke="white"
+                          strokeWidth="3"
+                          strokeDasharray={2 * Math.PI * 16}
+                          strokeDashoffset={2 * Math.PI * 16 * (1 - uploadProgress / 100)}
+                          strokeLinecap="round"
+                          className="transition-[stroke-dashoffset] duration-200"
                         />
-                      </div>
-                      <span className="mt-1.5 text-xs font-medium text-white">{uploadProgress}%</span>
+                      </svg>
+                      <span className="mt-0.5 text-xs font-medium text-white">{uploadProgress}%</span>
                     </div>
                   )}
                   <button

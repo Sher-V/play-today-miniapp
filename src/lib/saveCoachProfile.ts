@@ -18,7 +18,8 @@ const DISTRICT_LABELS_TO_IDS: Record<string, string> = Object.fromEntries(
   Object.entries(DISTRICT_IDS_TO_LABELS).map(([id, label]) => [label, id])
 );
 
-function uploadFileToGCSWithProgress(
+/** Загружает один файл в Storage и возвращает публичный URL. Для загрузки сразу после выбора файла. */
+export function uploadCoachMediaFile(
   userId: string,
   file: File,
   type: 'photo' | 'video',
@@ -41,6 +42,15 @@ function uploadFileToGCSWithProgress(
       () => getDownloadURL(task.snapshot.ref).then(resolve)
     );
   });
+}
+
+function uploadFileToGCSWithProgress(
+  userId: string,
+  file: File,
+  type: 'photo' | 'video',
+  onProgress: (percent: number) => void
+): Promise<string> {
+  return uploadCoachMediaFile(userId, file, type, onProgress);
 }
 
 async function buildCoachMedia(
@@ -95,7 +105,12 @@ export async function saveCoachProfile(
   userId: string,
   coachName: string,
   data: CoachFormData,
-  opts?: { existingCoachMedia?: CoachMediaItem[]; onProgress?: (percent: number, label: string) => void }
+  opts?: {
+    existingCoachMedia?: CoachMediaItem[];
+    onProgress?: (percent: number, label: string) => void;
+    /** Уже загруженные медиа (загрузка была при выборе файла в форме) */
+    newCoachMediaItems?: CoachMediaItem[];
+  }
 ): Promise<void> {
   await ensureSignedIn();
   if (auth.currentUser?.uid !== userId) {
@@ -107,9 +122,13 @@ export async function saveCoachProfile(
   const districtLabels = data.districts.map((id) => DISTRICT_IDS_TO_LABELS[id] || id);
 
   let coachMedia: CoachMediaItem[];
-  const hasNewMedia = (data.photoFiles?.length ?? 0) > 0 || data.videoFile;
   const keptExisting = opts?.existingCoachMedia ?? [];
-  if (hasNewMedia) {
+  const preUploaded = opts?.newCoachMediaItems ?? [];
+  const hasLegacyFiles = (data.photoFiles?.length ?? 0) > 0 || data.videoFile;
+
+  if (preUploaded.length > 0) {
+    coachMedia = [...keptExisting, ...preUploaded];
+  } else if (hasLegacyFiles) {
     const newMedia = await buildCoachMedia(
       userId,
       data.photoFiles ?? [],
