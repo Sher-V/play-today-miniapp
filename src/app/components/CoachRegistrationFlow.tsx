@@ -147,7 +147,7 @@ export function CoachRegistrationFlow({
     {
       title: 'Шаг 1 из 8',
       question: 'Как вас зовут?',
-      hint: 'Имя + Фамилия одним сообщением',
+      hint: null,
       content: (
         <Input
           placeholder="Имя Фамилия"
@@ -575,7 +575,7 @@ export function CoachRegistrationFlow({
         ))}
       </div>
 
-      <div className="flex gap-2 sticky bottom-2 bg-gray-50/95 p-2 rounded-lg">
+      <div className="flex gap-2">
         <Button
           className="flex-1 bg-blue-600 hover:bg-blue-700"
           onClick={handleSubmit}
