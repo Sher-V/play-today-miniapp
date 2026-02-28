@@ -1,4 +1,4 @@
-import { ChevronLeft, MapPin, Calendar, DollarSign, MessageCircle, Pencil, Users } from 'lucide-react';
+import { ChevronLeft, MapPin, Calendar, MessageCircle, Pencil, Users } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import type { UserProfile } from '../../lib/types';
@@ -12,138 +12,209 @@ interface ProfileViewProps {
 export function ProfileView({ profile, onBack, onEdit }: ProfileViewProps) {
   const hasCoachData = profile.isCoach || profile.coachName;
   const media = profile.coachMedia?.filter((m) => m.publicUrl) ?? [];
+  const firstPhoto = media.find((m) => m.type === 'photo' && m.publicUrl)?.publicUrl;
 
   if (!hasCoachData) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-600">
-            <ChevronLeft className="w-4 h-4" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-600 -ml-2">
+            <ChevronLeft className="h-5 w-5" />
             Назад
           </Button>
         </div>
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Users className="mx-auto h-12 w-12 text-gray-300" />
-            <p className="mt-3 text-sm font-medium text-gray-900">Профиль не заполнен</p>
-            <p className="mt-1 text-sm text-gray-500">
+
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-8 text-center shadow-xl">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,255,255,0.2)_0%,_transparent_50%)]" />
+          <div className="relative">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+              <Users className="h-10 w-10 text-white" />
+            </div>
+            <h2 className="mt-5 text-xl font-bold text-white">Профиль не заполнен</h2>
+            <p className="mt-2 max-w-xs mx-auto text-sm text-blue-100 leading-relaxed">
               Заполните анкету тренера, чтобы вас могли найти игроки
             </p>
-            <Button className="mt-4" onClick={onEdit}>
+            <Button
+              className="mt-6 bg-white text-blue-600 hover:bg-blue-50 shadow-lg"
+              onClick={onEdit}
+              size="lg"
+            >
               <Pencil className="mr-2 h-4 w-4" />
               Заполнить анкету
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-600">
-          <ChevronLeft className="w-4 h-4" />
+    <div className="space-y-5 pb-8">
+      {/* Шапка */}
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-600 -ml-2">
+          <ChevronLeft className="h-5 w-5" />
           Назад
         </Button>
-        <Button onClick={onEdit} className="bg-blue-600 hover:bg-blue-700">
+        <Button
+          onClick={onEdit}
+          size="sm"
+          className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+        >
           <Pencil className="mr-2 h-4 w-4" />
           Редактировать
         </Button>
       </div>
 
-      {/* Медиа-галерея */}
-      {media.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-          <div className="flex gap-2 overflow-x-auto p-2">
-            {media.map((m) =>
-              m.type === 'photo' && m.publicUrl ? (
+      {/* Карточка профиля */}
+      <div className="overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-gray-100">
+        {/* Аватар + имя */}
+        <div className="relative">
+          <div className="h-32 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600" />
+          <div className="absolute -bottom-12 left-5">
+            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-gray-100 shadow-xl">
+              {firstPhoto ? (
                 <img
-                  key={m.publicUrl}
-                  src={m.publicUrl}
+                  src={firstPhoto}
                   alt=""
-                  className="h-32 w-32 shrink-0 rounded-lg object-cover"
+                  className="h-full w-full object-cover"
                 />
-              ) : m.type === 'video' && m.publicUrl ? (
-                <video
-                  key={m.publicUrl}
-                  src={m.publicUrl}
-                  className="h-32 w-32 shrink-0 rounded-lg object-cover"
-                  muted
-                  playsInline
-                />
-              ) : null
-            )}
+              ) : (
+                <Users className="h-12 w-12 text-gray-400" />
+              )}
+            </div>
           </div>
         </div>
-      )}
+        <div className="pt-14 px-5 pb-5">
+          <h1 className="text-xl font-bold text-gray-900">{profile.coachName}</h1>
+        </div>
 
-      <Card>
-        <CardContent className="p-4 space-y-4">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">{profile.coachName}</h2>
-          </div>
-
-          {profile.coachDistricts && profile.coachDistricts.length > 0 && (
-            <div className="flex items-start gap-3">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-              <div>
-                <p className="text-xs font-medium text-gray-500">Районы</p>
-                <p className="text-sm text-gray-900">{profile.coachDistricts.join(', ')}</p>
+        {/* Контент */}
+        <div className="px-5 pb-6 space-y-4">
+          {/* Галерея */}
+          {media.length > 1 && (
+            <div className="overflow-hidden rounded-xl bg-gray-50">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500">
+                Фото и видео
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5">
+                {media.map((m) =>
+                  m.type === 'photo' && m.publicUrl ? (
+                    <img
+                      key={m.publicUrl}
+                      src={m.publicUrl}
+                      alt=""
+                      className="h-28 w-28 shrink-0 rounded-lg object-cover"
+                    />
+                  ) : m.type === 'video' && m.publicUrl ? (
+                    <video
+                      key={m.publicUrl}
+                      src={m.publicUrl}
+                      className="h-28 w-28 shrink-0 rounded-lg object-cover"
+                      muted
+                      playsInline
+                    />
+                  ) : null
+                )}
               </div>
             </div>
           )}
 
+          {/* Районы */}
+          {profile.coachDistricts && profile.coachDistricts.length > 0 && (
+            <div className="flex items-start gap-3 rounded-xl bg-gray-50 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
+                <MapPin className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Районы
+                </p>
+                <p className="mt-0.5 text-gray-900 font-medium">
+                  {profile.coachDistricts.join(', ')}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Цены */}
           {(profile.coachPriceIndividual != null ||
             profile.coachPriceSplit != null ||
             profile.coachPriceGroup != null) && (
-            <div className="flex items-start gap-3">
-              <DollarSign className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-gray-500">Цены</p>
-                <div className="text-sm text-gray-900 space-y-0.5">
+            <div className="flex items-start gap-3 rounded-xl bg-gray-50 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100">
+                <span className="text-lg font-bold text-green-600">₽</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Цены
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-2">
                   {profile.coachPriceIndividual != null && profile.coachPriceIndividual > 0 && (
-                    <p>Индивидуально: {profile.coachPriceIndividual.toLocaleString('ru-RU')} ₽/час</p>
+                    <span className="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-gray-800 shadow-sm ring-1 ring-gray-200/80">
+                      Индив.: {profile.coachPriceIndividual.toLocaleString('ru-RU')} ₽/час
+                    </span>
                   )}
                   {profile.coachPriceSplit != null && profile.coachPriceSplit > 0 && (
-                    <p>Сплит: {profile.coachPriceSplit.toLocaleString('ru-RU')} ₽/час</p>
+                    <span className="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-gray-800 shadow-sm ring-1 ring-gray-200/80">
+                      Сплит: {profile.coachPriceSplit.toLocaleString('ru-RU')} ₽/час
+                    </span>
                   )}
                   {profile.coachPriceGroup != null && profile.coachPriceGroup > 0 && (
-                    <p>Группа: {profile.coachPriceGroup.toLocaleString('ru-RU')} ₽/час</p>
+                    <span className="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-gray-800 shadow-sm ring-1 ring-gray-200/80">
+                      Группа: {profile.coachPriceGroup.toLocaleString('ru-RU')} ₽/час
+                    </span>
                   )}
                 </div>
               </div>
             </div>
           )}
 
+          {/* Дни работы */}
           {profile.coachAvailableDays && profile.coachAvailableDays.length > 0 && (
-            <div className="flex items-start gap-3">
-              <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+            <div className="flex items-start gap-3 rounded-xl bg-gray-50 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100">
+                <Calendar className="h-5 w-5 text-amber-600" />
+              </div>
               <div>
-                <p className="text-xs font-medium text-gray-500">Дни работы</p>
-                <p className="text-sm text-gray-900">{profile.coachAvailableDays.join(', ')}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Дни работы
+                </p>
+                <p className="mt-0.5 text-gray-900 font-medium">
+                  {profile.coachAvailableDays.join(', ')}
+                </p>
               </div>
             </div>
           )}
 
+          {/* Контакт */}
           {profile.coachContact && (
-            <div className="flex items-start gap-3">
-              <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+            <div className="flex items-start gap-3 rounded-xl bg-gray-50 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
+                <MessageCircle className="h-5 w-5 text-blue-600" />
+              </div>
               <div>
-                <p className="text-xs font-medium text-gray-500">Контакт</p>
-                <p className="text-sm text-gray-900">{profile.coachContact}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Контакт
+                </p>
+                <p className="mt-0.5 text-gray-900 font-medium">{profile.coachContact}</p>
               </div>
             </div>
           )}
 
+          {/* О себе */}
           {profile.coachAbout && (
-            <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">О себе</p>
-              <p className="text-sm text-gray-900 whitespace-pre-wrap">{profile.coachAbout}</p>
+            <div className="rounded-xl bg-gray-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                О себе
+              </p>
+              <p className="mt-2 text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {profile.coachAbout}
+              </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
