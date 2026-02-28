@@ -22,6 +22,7 @@ import { getTrainerInfoForGroup, createTrainersMap } from '../utils/trainerMappe
 import { parseGroupDateTime, isPastDateTime } from '../utils/dateCalculator';
 import { useTelegram } from '../hooks/useTelegram';
 import { useHasCoachProfile } from '../hooks/useHasCoachProfile';
+import { getStoredGroupRole } from '../lib/groupRegistrationStorage';
 import { sendContactRequest } from '../lib/sendContactRequest';
 import { signInWithTelegram } from '../lib/telegramAuth';
 
@@ -63,6 +64,8 @@ export default function App() {
   const { trainers } = useTrainers(isListPage);
   const trainersMap = useMemo(() => createTrainersMap(trainers), [trainers]);
   const { hasCoach: hasCoachProfile } = useHasCoachProfile(telegramUser?.id);
+  const isClubAdmin = getStoredGroupRole(telegramUser?.id) === 'admin';
+  const showMyTrainings = hasCoachProfile || isClubAdmin;
 
   const [filters, setFilters] = useState<FilterState>({
     timeOfDay: [],
@@ -246,7 +249,7 @@ export default function App() {
               </Button>
               <SheetContent side="right" className="w-64">
                 <div className="flex flex-col gap-1 pt-4">
-                  {hasCoachProfile && (
+                  {showMyTrainings && (
                     <button
                       type="button"
                       className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
