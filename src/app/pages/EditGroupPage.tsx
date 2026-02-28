@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { format, addMonths } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -8,6 +8,8 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Calendar } from '../components/ui/calendar';
 import { useTelegram } from '../../hooks/useTelegram';
+import { useClubTrainers } from '../../hooks/useClubTrainers';
+import { getStoredGroupRole } from '../../lib/groupRegistrationStorage';
 import {
   getGroupTraining,
   updateGroupTraining,
@@ -28,6 +30,18 @@ const LEVEL_OPTIONS: { value: GroupTraining['level']; label: string }[] = [
 const DURATION_OPTIONS = [1, 1.5, 2] as const;
 const GROUP_SIZE_OPTIONS = ['3-4', '5-6'] as const;
 
+/** Тренер для выбора админом (из клуба) */
+interface SelectedTrainer {
+  id: string;
+  clubTrainerId?: string;
+  trainerName: string;
+  coachName?: string;
+  contact: string;
+  coachPhotoUrl?: string;
+  coachAbout?: string;
+  userId?: number;
+}
+
 /** Парсит dateTime "DD.MM HH:mm" в дату и время */
 function parseDateTime(dateTime: string): { date: Date; time: string } {
   const [datePart, timePart] = dateTime.split(' ');
@@ -45,6 +59,22 @@ export function EditGroupPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user: telegramUser, hapticFeedback } = useTelegram();
+  const isClubAdmin = getStoredGroupRole(telegramUser?.id) === 'admin';
+  const { trainers: clubTrainers } = useClubTrainers(telegramUser?.id, isClubAdmin);
+
+  const trainersAtCourt: SelectedTrainer[] = useMemo(
+    () =>
+      clubTrainers.map((ct) => ({
+        id: `c-${ct.id}`,
+        clubTrainerId: ct.id,
+        trainerName: ct.coachName,
+        coachName: ct.coachName,
+        contact: ct.contact,
+        coachPhotoUrl: ct.coachPhotoUrl,
+        coachAbout: ct.coachAbout,
+      })),
+    [clubTrainers]
+  );
 
   const [training, setTraining] = useState<GroupTraining | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,6 +82,7 @@ export function EditGroupPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
+  const [trainerInputFocused, setTrainerInputFocused] = useState(false);
 
   const [courtName, setCourtName] = useState('');
   const [date, setDate] = useState<Date | null>(null);
@@ -62,6 +93,19 @@ export function EditGroupPage() {
   const [level, setLevel] = useState<GroupTraining['level']>('beginner');
   const [priceSingle, setPriceSingle] = useState('');
   const [contact, setContact] = useState('');
+  const [trainerSearchQuery, setTrainerSearchQuery] = useState('');
+  const [selectedTrainer, setSelectedTrainer] = useState<SelectedTrainer | null>(null);
+
+  const trainerSearch = (trainerSearchQuery ?? '').trim().toLowerCase();
+  const filteredTrainers = useMemo(
+    () =>
+      !trainerSearch
+        ? trainersAtCourt
+        : trainersAtCourt.filter((t) =>
+            (t.coachName || t.trainerName).toLowerCase().includes(trainerSearch)
+          ),
+    [trainersAtCourt, trainerSearch]
+  );
 
   useEffect(() => {
     if (!id) {
@@ -93,6 +137,9 @@ export function EditGroupPage() {
         setLevel(t.level);
         setPriceSingle(String(t.priceSingle));
         setContact(t.contact);
+        if (getStoredGroupRole(telegramUser?.id) === 'admin') {
+          setTrainerSearchQuery(t.coachName?.trim() || t.trainerName || '');
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -111,7 +158,7 @@ export function EditGroupPage() {
     const dateTimeStr = `${format(date, 'dd.MM')} ${time}`;
     setSaving(true);
     try {
-      await updateGroupTraining(id, {
+      const payload: UpdateGroupTrainingInput = {
         courtName: courtName.trim(),
         dateTime: dateTimeStr,
         isRecurring,
@@ -120,7 +167,15 @@ export function EditGroupPage() {
         level,
         priceSingle: Number(priceSingle) || 0,
         contact: contact.trim(),
-      });
+      };
+      if (isClubAdmin && selectedTrainer) {
+        payload.coachName = (selectedTrainer.coachName || selectedTrainer.trainerName).trim();
+        payload.contact = selectedTrainer.contact.trim();
+        if (selectedTrainer.coachPhotoUrl) payload.coachPhotoUrl = selectedTrainer.coachPhotoUrl;
+        if (selectedTrainer.coachAbout?.trim()) payload.coachAbout = selectedTrainer.coachAbout.trim();
+        if (selectedTrainer.userId != null) payload.coachUserId = selectedTrainer.userId;
+      }
+      await updateGroupTraining(id, payload);
       hapticFeedback('success');
       toast.success('Изменения сохранены');
       navigate('/my-groups');
@@ -203,6 +258,74 @@ export function EditGroupPage() {
   ];
 
   const stepBlocks = [
+    /* Для админа: выбор тренера группы */
+    ...(isClubAdmin && training
+      ? [
+          <div key="0" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
+            <h3 className="font-semibold text-sm text-gray-900">Тренер группы</h3>
+            <Label className="text-xs text-gray-600">Можно изменить — начните вводить имя или выберите из списка</Label>
+            <div className="relative">
+              <Input
+                placeholder="Имя тренера"
+                value={trainerSearchQuery}
+                onChange={(e) => {
+                  setTrainerSearchQuery(e.target.value);
+                  setSelectedTrainer(null);
+                }}
+                onFocus={() => setTrainerInputFocused(true)}
+                onBlur={() => setTimeout(() => setTrainerInputFocused(false), 150)}
+                className="h-9 border-gray-300 bg-white focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20"
+              />
+              {trainerInputFocused && !selectedTrainer && filteredTrainers.length > 0 && (
+                <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+                  {filteredTrainers.map((t) => (
+                    <li key={t.id}>
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-100"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setSelectedTrainer(t);
+                          setTrainerSearchQuery(t.coachName || t.trainerName);
+                          setTrainerInputFocused(false);
+                        }}
+                      >
+                        {t.coachName || t.trainerName}
+                        {t.contact && (
+                          <span className="text-gray-500 ml-1">— {t.contact}</span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {selectedTrainer && (
+              <p className="flex items-center gap-1.5 text-xs text-green-600">
+                <Check className="h-4 w-4 shrink-0" strokeWidth={3} />
+                Тренер выбран
+              </p>
+            )}
+            {selectedTrainer && (
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
+                <span className="font-medium text-gray-900">
+                  {selectedTrainer.coachName || selectedTrainer.trainerName}
+                </span>
+                <button
+                  type="button"
+                  className="text-gray-500 hover:text-gray-700"
+                  onClick={() => {
+                    setSelectedTrainer(null);
+                    setTrainerSearchQuery(training.coachName?.trim() || training.trainerName || '');
+                  }}
+                >
+                  Изменить
+                </button>
+              </div>
+            )}
+          </div>,
+        ]
+      : []),
     /* Шаг 1 */
     <div key="1" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
       <h3 className="font-semibold text-sm text-gray-900">Шаг 1</h3>
@@ -375,7 +498,7 @@ export function EditGroupPage() {
         {stepBlocks.map((block, index) => (
           <div key={index} className="relative">
             {block}
-            {stepChecks[index] && (
+            {(isClubAdmin && index === 0 ? false : stepChecks[isClubAdmin ? index - 1 : index]) && (
               <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-green-500 bg-white">
                 <Check className="h-4 w-4 text-green-500" strokeWidth={3} />
               </div>

@@ -372,20 +372,15 @@ export function CoachRegistrationFlow({
             <div className="min-w-0 flex-1">
               <p className="font-bold text-blue-800">Профиль почти готов!</p>
               <p className="mt-1 text-sm text-gray-700">
-                Фото и видео сильно повышают доверие, очень рекомендуем добавить:
+                Фото сильно повышают доверие, очень рекомендуем добавить 1–2 своих фото.
               </p>
-              <ul className="mt-2 list-none space-y-1 text-sm text-gray-700">
-                <li>• 1–2 своих фото</li>
-                <li>• короткое видео о себе (&lt;2 мин)</li>
-                <li>• по желанию, видео с вами с корта</li>
-              </ul>
             </div>
           </div>
 
           {/* Существующие медиа (режим редактирования) */}
           {isEditMode && initialData?.existingCoachMedia && initialData.existingCoachMedia.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-900">Текущие фото и видео</Label>
+              <Label className="text-sm font-medium text-gray-900">Текущие фото</Label>
               <div className="flex flex-wrap gap-2">
                 {initialData.existingCoachMedia.map((m) => {
                   if (!m.publicUrl || !keptExistingUrls.has(m.publicUrl)) return null;

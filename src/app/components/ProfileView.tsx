@@ -124,11 +124,11 @@ export function ProfileView({ profile, onBack, onEdit, onRegisterCoach }: Profil
 
         {/* Контент */}
         <div className="px-5 pb-6 space-y-4">
-          {/* Фото и видео — заголовок сверху, слайдер ниже */}
+          {/* Фото — заголовок сверху, слайдер ниже */}
           {media.length > 0 && (
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 pt-1">
-                Фото и видео
+                Фото
               </p>
               <div className="rounded-xl overflow-hidden bg-gray-100 touch-pan-x select-none" style={{ touchAction: 'pan-x' }}>
                 <Slider
