@@ -438,6 +438,7 @@ export function GroupRegistrationFlow({
     <div key="3" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
       <h3 className="font-semibold text-sm text-gray-900">{isAdmin ? 'Шаг 5' : 'Шаг 4'}</h3>
       <Label className="text-xs text-gray-600">Есть ли место в группе на регулярной основе?</Label>
+      <p className="text-xs text-gray-500">При выборе «Да» группа будет отображаться каждую неделю в то же время.</p>
       <div className="grid grid-cols-2 gap-2">
         <Button
           variant={formData.isRecurring === true ? 'primary' : 'outline'}

@@ -101,7 +101,7 @@ export function AfterGroupSubmitScreen({
             <AlertTriangle className="h-6 w-6 text-white" />
           </div>
           <p className="text-sm font-medium text-gray-900">
-            Пока группа <strong>пока не</strong> отображается игрокам — зарегистрируйте профиль тренера в сервисе Play Today, это займёт <strong>1 минуту</strong>.
+            Группа <strong>пока не</strong> отображается игрокам — зарегистрируйте профиль тренера в сервисе Play Today, это займёт <strong>1 минуту</strong>.
           </p>
         </div>
       )}
