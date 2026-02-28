@@ -568,7 +568,7 @@ export function GroupRegistrationFlow({
         ))}
       </div>
 
-      <div className="flex gap-2 sticky bottom-2 bg-gray-50/95 p-2 rounded-lg">
+      <div className="flex gap-2 pt-4">
         <Button
           className="flex-1 bg-blue-600 hover:bg-blue-700"
           onClick={handleSubmit}
