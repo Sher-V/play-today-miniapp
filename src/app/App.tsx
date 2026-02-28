@@ -21,6 +21,7 @@ import { mapTrainingToGroup } from '../utils/trainingMapper';
 import { getTrainerInfoForGroup, createTrainersMap } from '../utils/trainerMapper';
 import { parseGroupDateTime, isPastDateTime } from '../utils/dateCalculator';
 import { useTelegram } from '../hooks/useTelegram';
+import { useHasCoachProfile } from '../hooks/useHasCoachProfile';
 import { sendContactRequest } from '../lib/sendContactRequest';
 import { signInWithTelegram } from '../lib/telegramAuth';
 
@@ -61,6 +62,7 @@ export default function App() {
   const error = allError;
   const { trainers } = useTrainers(isListPage);
   const trainersMap = useMemo(() => createTrainersMap(trainers), [trainers]);
+  const { hasCoach: hasCoachProfile } = useHasCoachProfile(telegramUser?.id);
 
   const [filters, setFilters] = useState<FilterState>({
     timeOfDay: [],
@@ -266,17 +268,19 @@ export default function App() {
                     <LayoutGrid className="h-5 w-5 text-blue-600" />
                     Все тренировки
                   </button>
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      navigate('/register-coach');
-                    }}
-                  >
-                    <Users className="h-5 w-5 text-blue-600" />
-                    Регистрация тренера
-                  </button>
+                  {!hasCoachProfile && (
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        navigate('/register-coach');
+                      }}
+                    >
+                      <Users className="h-5 w-5 text-blue-600" />
+                      Регистрация тренера
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
