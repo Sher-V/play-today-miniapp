@@ -55,9 +55,19 @@ interface CoachRegistrationFlowProps {
   };
   /** Текст заголовка и кнопки в режиме редактирования */
   isEditMode?: boolean;
+  /** Прогресс загрузки медиа (0–100), показываем лоадер поверх фото/видео */
+  uploadProgress?: number | null;
+  uploadLabel?: string;
 }
 
-export function CoachRegistrationFlow({ onBack, onSubmit, initialData, isEditMode }: CoachRegistrationFlowProps) {
+export function CoachRegistrationFlow({
+  onBack,
+  onSubmit,
+  initialData,
+  isEditMode,
+  uploadProgress = null,
+  uploadLabel,
+}: CoachRegistrationFlowProps) {
   const initialForm = initialData
     ? {
         name: initialData.name ?? '',
@@ -398,7 +408,20 @@ export function CoachRegistrationFlow({ onBack, onSubmit, initialData, isEditMod
               }}
             />
             {photoFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 relative">
+                {uploadProgress != null && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-lg bg-black/60">
+                    <div className="h-2 w-32 rounded-full bg-white/30 overflow-hidden">
+                      <div
+                        className="h-full bg-white rounded-full transition-all duration-200"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <span className="mt-2 text-sm font-medium text-white">
+                      {uploadLabel ?? 'Загрузка'} {uploadProgress}%
+                    </span>
+                  </div>
+                )}
                 {photoFiles.map((file, i) => (
                   <div key={i} className="relative">
                     <img
@@ -408,8 +431,9 @@ export function CoachRegistrationFlow({ onBack, onSubmit, initialData, isEditMod
                     />
                     <button
                       type="button"
-                      className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-white"
+                      className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-white disabled:opacity-50"
                       onClick={() => setPhotoFiles((p) => p.filter((_, j) => j !== i))}
+                      disabled={uploadProgress != null}
                     >
                       ×
                     </button>
@@ -446,18 +470,32 @@ export function CoachRegistrationFlow({ onBack, onSubmit, initialData, isEditMod
               }}
             />
             {videoFile && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 relative">
+                {uploadProgress != null && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-lg bg-black/60 py-2">
+                    <div className="h-2 w-32 rounded-full bg-white/30 overflow-hidden">
+                      <div
+                        className="h-full bg-white rounded-full transition-all duration-200"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <span className="mt-2 text-sm font-medium text-white">
+                      {uploadLabel ?? 'Загрузка'} {uploadProgress}%
+                    </span>
+                  </div>
+                )}
                 <p className="flex-1 truncate text-sm text-gray-600">
                   Выбрано: {videoFile.name}
                 </p>
                 <button
                   type="button"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-50"
                   onClick={() => {
                     setVideoFile(null);
                     if (videoInputRef.current) videoInputRef.current.value = '';
                   }}
                   title="Удалить видео"
+                  disabled={uploadProgress != null}
                 >
                   ×
                 </button>

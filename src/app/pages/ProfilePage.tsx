@@ -12,6 +12,8 @@ import { Loader2 } from 'lucide-react';
 export function ProfilePage() {
   const navigate = useNavigate();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadLabel, setUploadLabel] = useState<string>('');
   const { user: telegramUser, hapticFeedback } = useTelegram();
   const userId = telegramUser?.id != null ? String(telegramUser.id) : undefined;
   const { profile, loading, error } = useUserProfile(userId);
@@ -30,7 +32,13 @@ export function ProfilePage() {
         userId,
         telegramUserName || data.name,
         data,
-        { existingCoachMedia: data.existingCoachMedia }
+        {
+          existingCoachMedia: data.existingCoachMedia,
+          onProgress: (percent, label) => {
+            setUploadProgress(percent);
+            setUploadLabel(label);
+          },
+        }
       );
       hapticFeedback('success');
       toast.success('Профиль сохранён');
@@ -40,6 +48,9 @@ export function ProfilePage() {
       toast.error('Не удалось сохранить профиль', {
         description: e instanceof Error ? e.message : undefined,
       });
+    } finally {
+      setUploadProgress(null);
+      setUploadLabel('');
     }
   };
 
@@ -104,6 +115,8 @@ export function ProfilePage() {
         onSubmit={handleSubmit}
         initialData={initialData}
         isEditMode={!!hasCoachData}
+        uploadProgress={uploadProgress}
+        uploadLabel={uploadLabel}
       />
     );
   }

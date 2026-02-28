@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { CoachRegistrationFlow } from '../components/CoachRegistrationFlow';
 import { useTelegram } from '../../hooks/useTelegram';
@@ -8,6 +8,8 @@ import { saveCoachProfile } from '../../lib/saveCoachProfile';
 
 export function RegisterCoachPage() {
   const navigate = useNavigate();
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadLabel, setUploadLabel] = useState<string>('');
   const { user: telegramUser, hapticFeedback } = useTelegram();
 
   const telegramUserName = [telegramUser?.first_name, telegramUser?.last_name]
@@ -24,7 +26,12 @@ export function RegisterCoachPage() {
       return;
     }
     try {
-      await saveCoachProfile(userId, coachName, data);
+      await saveCoachProfile(userId, coachName, data, {
+        onProgress: (percent, label) => {
+          setUploadProgress(percent);
+          setUploadLabel(label);
+        },
+      });
       hapticFeedback('success');
       toast.success('Профиль тренера сохранён');
       navigate('/my-groups');
@@ -33,6 +40,9 @@ export function RegisterCoachPage() {
       toast.error('Не удалось сохранить профиль', {
         description: e instanceof Error ? e.message : 'Проверьте настройки Firebase и авторизацию.',
       });
+    } finally {
+      setUploadProgress(null);
+      setUploadLabel('');
     }
   };
 
@@ -40,6 +50,8 @@ export function RegisterCoachPage() {
     <CoachRegistrationFlow
       onBack={() => navigate('/')}
       onSubmit={handleSubmit}
+      uploadProgress={uploadProgress}
+      uploadLabel={uploadLabel}
     />
   );
 }

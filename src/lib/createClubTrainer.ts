@@ -1,16 +1,32 @@
 import { addDoc, collection, Timestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from './firebase';
 import type { ClubTrainer } from './types';
 
-/** Загружает фото тренера клуба в Storage, возвращает публичный URL */
-export async function uploadClubTrainerPhoto(adminUserId: number, file: File): Promise<string> {
+/** Загружает фото тренера клуба в Storage, возвращает публичный URL. onProgress(0-100) */
+export async function uploadClubTrainerPhoto(
+  adminUserId: number,
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<string> {
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const safeExt = ext === 'jpeg' ? 'jpg' : ext;
   const path = `coach-media/club/${adminUserId}/${Date.now()}_photo.${safeExt}`;
   const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
-  return getDownloadURL(storageRef);
+  const task = uploadBytesResumable(storageRef, file);
+  return new Promise((resolve, reject) => {
+    task.on(
+      'state_changed',
+      (snapshot) => {
+        const percent = snapshot.totalBytes
+          ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+          : 0;
+        onProgress?.(percent);
+      },
+      reject,
+      () => getDownloadURL(task.snapshot.ref).then(resolve)
+    );
+  });
 }
 
 export interface CreateClubTrainerInput {

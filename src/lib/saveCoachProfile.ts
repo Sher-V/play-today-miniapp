@@ -1,5 +1,5 @@
 import { doc, setDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage, auth } from './firebase';
 import { ensureSignedIn } from './telegramAuth';
 import type { CoachFormData } from '../app/components/CoachRegistrationFlow';
@@ -18,29 +18,62 @@ const DISTRICT_LABELS_TO_IDS: Record<string, string> = Object.fromEntries(
   Object.entries(DISTRICT_IDS_TO_LABELS).map(([id, label]) => [label, id])
 );
 
-async function uploadFileToGCS(userId: string, file: File, type: 'photo' | 'video'): Promise<string> {
+function uploadFileToGCSWithProgress(
+  userId: string,
+  file: File,
+  type: 'photo' | 'video',
+  onProgress: (percent: number) => void
+): Promise<string> {
   const ext = file.name.split('.').pop() || (type === 'photo' ? 'jpg' : 'mp4');
   const path = `coach-media/${userId}/${Date.now()}_${type}.${ext}`;
   const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
-  return getDownloadURL(storageRef);
+  const task = uploadBytesResumable(storageRef, file);
+  return new Promise((resolve, reject) => {
+    task.on(
+      'state_changed',
+      (snapshot) => {
+        const percent = snapshot.totalBytes
+          ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+          : 0;
+        onProgress(percent);
+      },
+      reject,
+      () => getDownloadURL(task.snapshot.ref).then(resolve)
+    );
+  });
 }
 
 async function buildCoachMedia(
   userId: string,
   photoFiles: File[],
-  videoFile: File | null
+  videoFile: File | null,
+  onProgress?: (percent: number, label: string) => void
 ): Promise<CoachMediaItem[]> {
   const items: CoachMediaItem[] = [];
   const now = new Date().toISOString();
+  const total = photoFiles.length + (videoFile ? 1 : 0);
+  let done = 0;
 
-  for (const file of photoFiles) {
-    const publicUrl = await uploadFileToGCS(userId, file, 'photo');
+  for (let i = 0; i < photoFiles.length; i++) {
+    const publicUrl = await uploadFileToGCSWithProgress(
+      userId,
+      photoFiles[i],
+      'photo',
+      (pct) => onProgress?.(Math.round((done * 100 + pct) / total), `Фото ${i + 1}/${photoFiles.length}`)
+    );
     items.push({ type: 'photo', publicUrl, uploadedAt: now });
+    done += 1;
+    onProgress?.(Math.round((done / total) * 100), `Фото ${i + 1}/${photoFiles.length}`);
   }
   if (videoFile) {
-    const publicUrl = await uploadFileToGCS(userId, videoFile, 'video');
+    const publicUrl = await uploadFileToGCSWithProgress(
+      userId,
+      videoFile,
+      'video',
+      (pct) => onProgress?.(Math.round((done * 100 + pct) / total), 'Видео')
+    );
     items.push({ type: 'video', publicUrl, uploadedAt: now });
+    onProgress?.(100, 'Видео');
   }
   return items;
 }
@@ -62,7 +95,7 @@ export async function saveCoachProfile(
   userId: string,
   coachName: string,
   data: CoachFormData,
-  opts?: { existingCoachMedia?: CoachMediaItem[] }
+  opts?: { existingCoachMedia?: CoachMediaItem[]; onProgress?: (percent: number, label: string) => void }
 ): Promise<void> {
   await ensureSignedIn();
   if (auth.currentUser?.uid !== userId) {
@@ -80,7 +113,8 @@ export async function saveCoachProfile(
     const newMedia = await buildCoachMedia(
       userId,
       data.photoFiles ?? [],
-      data.videoFile ?? null
+      data.videoFile ?? null,
+      opts?.onProgress
     );
     coachMedia = [...keptExisting, ...newMedia];
   } else {

@@ -31,6 +31,7 @@ export function AddClubTrainerForm({
   const [coachPhotoPreview, setCoachPhotoPreview] = useState<string | null>(null);
   const [coachAbout, setCoachAbout] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoFileRef = useRef<File | null>(null);
 
@@ -67,7 +68,11 @@ export function AddClubTrainerForm({
     try {
       let photoUrl: string | undefined;
       if (photoFileRef.current) {
-        photoUrl = await uploadClubTrainerPhoto(adminUserId, photoFileRef.current);
+        setUploadProgress(0);
+        photoUrl = await uploadClubTrainerPhoto(adminUserId, photoFileRef.current, (percent) =>
+          setUploadProgress(percent)
+        );
+        setUploadProgress(null);
       }
       await createClubTrainer({
         addedByUserId: adminUserId,
@@ -84,6 +89,7 @@ export function AddClubTrainerForm({
       });
     } finally {
       setSaving(false);
+      setUploadProgress(null);
     }
   };
 
@@ -132,11 +138,23 @@ export function AddClubTrainerForm({
                     alt="Фото тренера"
                     className="h-full w-full object-cover"
                   />
+                  {uploadProgress != null && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-lg">
+                      <div className="h-1.5 w-14 rounded-full bg-white/30 overflow-hidden">
+                        <div
+                          className="h-full bg-white rounded-full transition-all duration-200"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                      <span className="mt-1.5 text-xs font-medium text-white">{uploadProgress}%</span>
+                    </div>
+                  )}
                   <button
                     type="button"
-                    className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700 shadow"
+                    className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700 shadow disabled:opacity-50"
                     onClick={clearPhoto}
                     title="Удалить фото"
+                    disabled={uploadProgress != null}
                   >
                     ×
                   </button>
