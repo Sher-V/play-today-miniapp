@@ -44,6 +44,17 @@ export function AddClubTrainerForm({
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadGenerationRef = useRef(0);
+  const aboutTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const scrollAboutIntoView = () => {
+    const el = aboutTextareaRef.current;
+    if (!el) return;
+    // Даём клавиатуре время появиться, затем подскролливаем шторку
+    const timeoutId = window.setTimeout(() => {
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 350);
+    return () => window.clearTimeout(timeoutId);
+  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -234,8 +245,10 @@ export function AddClubTrainerForm({
             Краткая информация о тренере (необязательно)
           </Label>
           <textarea
+            ref={aboutTextareaRef}
             value={coachAbout}
             onChange={(e) => setCoachAbout(e.target.value)}
+            onFocus={scrollAboutIntoView}
             placeholder={COACH_ABOUT_PLACEHOLDER}
             rows={3}
             className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
