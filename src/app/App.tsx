@@ -86,9 +86,20 @@ export default function App() {
     return count;
   }, [filters]);
 
+  // Тренеры с неактивным профилем — их группы не показываем в каталоге
+  const hiddenTrainerIds = useMemo(
+    () => new Set(trainers.filter((t) => t.coachHidden).map((t) => t.id)),
+    [trainers]
+  );
+
   // Фильтрация групп
   const filteredGroups = useMemo(() => {
     return trainings.map(mapTrainingToGroup).filter((group) => {
+      // Не показывать группы тренеров с неактивным профилем
+      if (group.trainerUserId != null && hiddenTrainerIds.has(String(group.trainerUserId))) {
+        return false;
+      }
+
       // Фильтр: не показываем прошедшие занятия с isRecurring: false
       // Повторяющиеся занятия (isRecurring: true) всегда показываем, так как их дата автоматически вычисляется как будущая
       if (!group.isRecurring && isPastDateTime(group.date, group.time)) {
@@ -135,7 +146,7 @@ export default function App() {
       const dateB = parseGroupDateTime(b.date, b.time);
       return dateA.getTime() - dateB.getTime();
     });
-  }, [filters, trainings]);
+  }, [filters, trainings, hiddenTrainerIds]);
 
   const handleTrainerClick = (group: TennisGroup) => {
     hapticFeedback('light');

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { format, addMonths } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Check, ChevronLeft, Clock, User, UserPlus } from 'lucide-react';
@@ -105,7 +105,19 @@ export function GroupRegistrationFlow({
 
   const [submitting, setSubmitting] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
+  const datePickerRef = useRef<HTMLDivElement>(null);
   const [trainerInputFocused, setTrainerInputFocused] = useState(false);
+
+  useEffect(() => {
+    if (!dateOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
+        setDateOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dateOpen]);
 
   const isAdmin = formData.role === 'admin';
   const { trainers: clubTrainers } = useClubTrainers(telegramUserId, isAdmin);
@@ -369,7 +381,7 @@ export function GroupRegistrationFlow({
       <h3 className="font-semibold text-sm text-gray-900">{isAdmin ? 'Шаг 4' : 'Шаг 3'}</h3>
       <Label className="text-xs text-gray-600">Дата и время занятия</Label>
       <div className="flex flex-wrap gap-2 items-start">
-        <div className="flex flex-col gap-2">
+        <div ref={datePickerRef} className="flex flex-col gap-2 relative">
           <Button
             type="button"
             variant="outline"
@@ -381,7 +393,7 @@ export function GroupRegistrationFlow({
             {formData.date ? format(formData.date, 'dd.MM.yyyy', { locale: ru }) : 'Выберите дату'}
           </Button>
           {dateOpen && (
-            <div className="rounded-md border bg-white p-2 shadow-sm">
+            <div className="absolute top-full left-0 z-10 mt-1 rounded-md border bg-white p-2 shadow-sm">
               <Calendar
                 mode="single"
                 selected={formData.date ?? undefined}
@@ -412,8 +424,13 @@ export function GroupRegistrationFlow({
               if (v.length === 0) setFormData((p) => ({ ...p, time: '' }));
               else if (v.length === 1) setFormData((p) => ({ ...p, time: v }));
               else if (v.length === 2) {
+                // Две цифры — пока только часы, двоеточие не ставим, чтобы не мешать вводу
                 const h = Math.min(23, parseInt(v, 10) || 0);
-                setFormData((p) => ({ ...p, time: `${String(h).padStart(2, '0')}:` }));
+                setFormData((p) => ({ ...p, time: String(h).padStart(2, '0') }));
+              } else if (v.length === 3) {
+                const h = Math.min(23, parseInt(v.slice(0, 2), 10) || 0);
+                const m = Math.min(59, parseInt(v[2], 10) || 0);
+                setFormData((p) => ({ ...p, time: `${String(h).padStart(2, '0')}:${String(m)}` }));
               } else {
                 const h = Math.min(23, parseInt(v.slice(0, 2), 10) || 0);
                 const m = Math.min(59, parseInt(v.slice(2, 4), 10) || 0);
@@ -438,10 +455,17 @@ export function GroupRegistrationFlow({
                 const input = e.currentTarget;
                 setTimeout(() => input.setSelectionRange(3, 3), 0);
               }
+              // Две цифры часов без двоеточия (напр. "16") — удаляем последнюю цифру
+              else if (/^\d{2}$/.test(t)) {
+                e.preventDefault();
+                setFormData((p) => ({ ...p, time: t[0] }));
+                const input = e.currentTarget;
+                setTimeout(() => input.setSelectionRange(1, 1), 0);
+              }
               // Два цифры и двоеточие (напр. "16:") — удаляем последнюю цифру часов
               else if (/^\d{2}:$/.test(t)) {
                 e.preventDefault();
-                setFormData((p) => ({ ...p, time: t[0] + ':' }));
+                setFormData((p) => ({ ...p, time: t[0] }));
                 const input = e.currentTarget;
                 setTimeout(() => input.setSelectionRange(1, 1), 0);
               }

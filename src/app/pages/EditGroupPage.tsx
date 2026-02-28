@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { format, addMonths } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -90,7 +90,19 @@ export function EditGroupPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
+  const datePickerRef = useRef<HTMLDivElement>(null);
   const [trainerInputFocused, setTrainerInputFocused] = useState(false);
+
+  useEffect(() => {
+    if (!dateOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
+        setDateOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dateOpen]);
 
   const [courtName, setCourtName] = useState('');
   const [date, setDate] = useState<Date | null>(null);
@@ -350,7 +362,7 @@ export function EditGroupPage() {
       <h3 className="font-semibold text-sm text-gray-900">Шаг 2</h3>
       <Label className="text-xs text-gray-600">Дата и время занятия</Label>
       <div className="flex flex-wrap gap-2 items-start">
-        <div className="flex flex-col gap-2">
+        <div ref={datePickerRef} className="flex flex-col gap-2 relative">
           <Button
             type="button"
             variant="outline"
@@ -362,7 +374,7 @@ export function EditGroupPage() {
             {date ? format(date, 'dd.MM.yyyy', { locale: ru }) : 'Выберите дату'}
           </Button>
           {dateOpen && (
-            <div className="rounded-md border bg-white p-2 shadow-sm">
+            <div className="absolute top-full left-0 z-10 mt-1 rounded-md border bg-white p-2 shadow-sm">
               <Calendar
                 mode="single"
                 selected={date ?? undefined}
@@ -391,7 +403,11 @@ export function EditGroupPage() {
               else if (v.length === 1) setTime(v);
               else if (v.length === 2) {
                 const h = Math.min(23, parseInt(v, 10) || 0);
-                setTime(`${String(h).padStart(2, '0')}:`);
+                setTime(String(h).padStart(2, '0'));
+              } else if (v.length === 3) {
+                const h = Math.min(23, parseInt(v.slice(0, 2), 10) || 0);
+                const m = Math.min(59, parseInt(v[2], 10) || 0);
+                setTime(`${String(h).padStart(2, '0')}:${String(m)}`);
               } else {
                 const h = Math.min(23, parseInt(v.slice(0, 2), 10) || 0);
                 const m = Math.min(59, parseInt(v.slice(2, 4), 10) || 0);
@@ -411,9 +427,14 @@ export function EditGroupPage() {
                 setTime(time.slice(0, 3));
                 const input = e.currentTarget;
                 setTimeout(() => input.setSelectionRange(3, 3), 0);
+              } else if (/^\d{2}$/.test(time)) {
+                e.preventDefault();
+                setTime(time[0]);
+                const input = e.currentTarget;
+                setTimeout(() => input.setSelectionRange(1, 1), 0);
               } else if (/^\d{2}:$/.test(time)) {
                 e.preventDefault();
-                setTime(time[0] + ':');
+                setTime(time[0]);
                 const input = e.currentTarget;
                 setTimeout(() => input.setSelectionRange(1, 1), 0);
               } else if (/^\d:$/.test(time)) {
