@@ -183,16 +183,17 @@ export function EditGroupPage() {
     );
   }
 
+  const isValidTime = /^\d{2}:\d{2}$/.test(time);
   const canSave =
     courtName.trim().length > 0 &&
     date != null &&
-    time.trim().length > 0 &&
+    isValidTime &&
     /^\d+$/.test(priceSingle) &&
     contact.trim().length > 0;
 
   const stepChecks = [
     courtName.trim().length > 0,
-    date != null && time.trim().length > 0,
+    date != null && isValidTime,
     true,
     duration > 0,
     groupSize === '3-4' || groupSize === '5-6',
@@ -213,13 +214,19 @@ export function EditGroupPage() {
         className="h-9 border-gray-300 bg-white focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20"
       />
     </div>,
-    /* Шаг 2 */
+    /* Шаг 2 — такой же инпут даты/времени, как при регистрации */
     <div key="2" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
       <h3 className="font-semibold text-sm text-gray-900">Шаг 2</h3>
       <Label className="text-xs text-gray-600">Дата и время занятия</Label>
       <div className="flex flex-wrap gap-2 items-start">
         <div className="flex flex-col gap-2">
-          <Button type="button" variant="outline" size="sm" className="h-9 justify-start gap-2" onClick={() => setDateOpen((o) => !o)}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 justify-start gap-2"
+            onClick={() => setDateOpen((o) => !o)}
+          >
             <CalendarIcon className="w-4 h-4 shrink-0" />
             {date ? format(date, 'dd.MM.yyyy', { locale: ru }) : 'Выберите дату'}
           </Button>
@@ -229,6 +236,11 @@ export function EditGroupPage() {
                 mode="single"
                 selected={date ?? undefined}
                 onSelect={(d) => { setDate(d ?? null); setDateOpen(false); }}
+                disabled={(d) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return d < today;
+                }}
                 fromDate={new Date()}
                 toDate={addMonths(new Date(), 3)}
                 locale={ru}
@@ -236,9 +248,36 @@ export function EditGroupPage() {
             </div>
           )}
         </div>
-        <div className="relative flex h-9 max-w-[8rem] items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1 outline-none transition-[color,box-shadow] focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 [&_input]:h-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:p-0 [&_input]:outline-none [&_input]:focus-visible:ring-0 [&_input::-webkit-calendar-picker-indicator]:absolute [&_input::-webkit-calendar-picker-indicator]:inset-0 [&_input::-webkit-calendar-picker-indicator]:cursor-pointer [&_input::-webkit-calendar-picker-indicator]:opacity-0">
+        <div className="relative flex h-9 max-w-[8rem] items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1 outline-none transition-[color,box-shadow] focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 [&_input]:h-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:p-0 [&_input]:outline-none [&_input]:focus-visible:ring-0">
           <Clock className="h-4 w-4 shrink-0" />
-          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="min-w-0 flex-1 text-base md:text-sm" />
+          <Input
+            type="text"
+            inputMode="numeric"
+            value={time}
+            onChange={(e) => {
+              const v = e.target.value.replace(/\D/g, '');
+              if (v.length === 0) setTime('');
+              else if (v.length === 1) setTime(v);
+              else if (v.length === 2) setTime(`${v}:`);
+              else setTime(`${v.slice(0, 2)}:${v.slice(2, 4)}`);
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== 'Backspace') return;
+              if (/^\d{2}:$/.test(time)) {
+                e.preventDefault();
+                setTime(time[0] + ':');
+                const input = e.currentTarget;
+                setTimeout(() => input.setSelectionRange(1, 1), 0);
+              } else if (/^\d:$/.test(time)) {
+                e.preventDefault();
+                setTime('');
+                const input = e.currentTarget;
+                setTimeout(() => input.setSelectionRange(0, 0), 0);
+              }
+            }}
+            placeholder="--:--"
+            className="min-w-0 flex-1 text-base md:text-sm font-mono tabular-nums"
+          />
         </div>
       </div>
     </div>,
