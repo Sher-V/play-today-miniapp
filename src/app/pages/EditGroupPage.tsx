@@ -400,7 +400,18 @@ export function EditGroupPage() {
             }}
             onKeyDown={(e) => {
               if (e.key !== 'Backspace') return;
-              if (/^\d{2}:$/.test(time)) {
+              if (/^\d{2}:\d{2}$/.test(time)) {
+                e.preventDefault();
+                const [, mm] = time.split(':');
+                setTime(`${time.slice(0, 3)}${mm[0]}`);
+                const input = e.currentTarget;
+                setTimeout(() => input.setSelectionRange(4, 4), 0);
+              } else if (/^\d{2}:\d$/.test(time)) {
+                e.preventDefault();
+                setTime(time.slice(0, 3));
+                const input = e.currentTarget;
+                setTimeout(() => input.setSelectionRange(3, 3), 0);
+              } else if (/^\d{2}:$/.test(time)) {
                 e.preventDefault();
                 setTime(time[0] + ':');
                 const input = e.currentTarget;

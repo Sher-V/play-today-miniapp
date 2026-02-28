@@ -423,11 +423,25 @@ export function GroupRegistrationFlow({
             onKeyDown={(e) => {
               if (e.key !== 'Backspace') return;
               const t = formData.time;
-              // Два цифры и двоеточие (напр. "16:") — удаляем последнюю цифру часов, курсор после первой
-              if (/^\d{2}:$/.test(t)) {
+              // Полное время "20:59" — стираем последнюю цифру минут
+              if (/^\d{2}:\d{2}$/.test(t)) {
                 e.preventDefault();
-                const next = t[0] + ':';
-                setFormData((p) => ({ ...p, time: next }));
+                const [, mm] = t.split(':');
+                setFormData((p) => ({ ...p, time: `${t.slice(0, 3)}${mm[0]}` }));
+                const input = e.currentTarget;
+                setTimeout(() => input.setSelectionRange(4, 4), 0);
+              }
+              // Одна цифра минут "20:5" — убираем её, остаётся "20:"
+              else if (/^\d{2}:\d$/.test(t)) {
+                e.preventDefault();
+                setFormData((p) => ({ ...p, time: t.slice(0, 3) }));
+                const input = e.currentTarget;
+                setTimeout(() => input.setSelectionRange(3, 3), 0);
+              }
+              // Два цифры и двоеточие (напр. "16:") — удаляем последнюю цифру часов
+              else if (/^\d{2}:$/.test(t)) {
+                e.preventDefault();
+                setFormData((p) => ({ ...p, time: t[0] + ':' }));
                 const input = e.currentTarget;
                 setTimeout(() => input.setSelectionRange(1, 1), 0);
               }
