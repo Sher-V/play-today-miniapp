@@ -11,7 +11,7 @@ import { RegisterCoachPage } from './pages/RegisterCoachPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { Users, Loader2, Menu, List, LayoutGrid } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
-import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet';
+import { Sheet, SheetContent } from './components/ui/sheet';
 import { Button } from './components/ui/button';
 import { toast, Toaster } from 'sonner';
 import { useMyGroupTrainings } from '../hooks/useMyGroupTrainings';
@@ -227,14 +227,21 @@ export default function App() {
                 {isListPage && !telegramUser && 'Откройте в Telegram'}
               </p>
             </div>
-            {/* Меню-бургер */}
+            {/* Меню-бургер — явный onClick для корректной работы в Telegram WebView */}
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-              <SheetTrigger asChild>
-                <Button type="button" variant="ghost" size="icon" className="shrink-0">
-                  <Menu className="h-6 w-6 text-gray-700" />
-                  <span className="sr-only">Меню</span>
-                </Button>
-              </SheetTrigger>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="shrink-0 min-w-10 min-h-10 touch-manipulation"
+                onClick={() => {
+                  hapticFeedback('light');
+                  setIsMenuOpen(true);
+                }}
+                aria-label="Открыть меню"
+              >
+                <Menu className="h-6 w-6 text-gray-700" />
+              </Button>
               <SheetContent side="right" className="w-64">
                 <div className="flex flex-col gap-1 pt-4">
                   <button
