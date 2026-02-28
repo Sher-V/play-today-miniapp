@@ -12,6 +12,8 @@ interface AfterGroupSubmitScreenProps {
   role: GroupCreatorRole;
   groupId?: string;
   telegramUserId: number | undefined;
+  /** Админ выбрал существующего тренера — пропускаем форму добавления информации */
+  trainerWasExisting?: boolean;
   onBack: () => void;
   onRegisterCoach: () => void;
   onAddAnotherGroup: () => void;
@@ -24,11 +26,13 @@ export function AfterGroupSubmitScreen({
   role,
   groupId,
   telegramUserId,
+  trainerWasExisting,
   onBack,
   onRegisterCoach,
   onAddAnotherGroup,
 }: AfterGroupSubmitScreenProps) {
   const isAdmin = role === 'admin';
+  const adminSkipCoachForm = isAdmin && trainerWasExisting;
   const { hasCoach, loading: coachCheckLoading } = useHasCoachProfile(telegramUserId);
   const showCoachRegistration = !isAdmin && !coachCheckLoading && !hasCoach;
   const alreadyCoach = !isAdmin && !coachCheckLoading && hasCoach;
@@ -102,9 +106,32 @@ export function AfterGroupSubmitScreen({
         </div>
       )}
 
-      {/* Карточка: регистрация тренера / загрузка фото (админ) / уже тренер */}
+      {/* Карточка: регистрация тренера / загрузка фото (админ) / уже тренер / админ с существующим тренером */}
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-        {isAdmin ? (
+        {adminSkipCoachForm ? (
+          <div className="space-y-4">
+            <p className="text-center text-sm text-gray-600">
+              Группа привязана к выбранному тренеру и отображается в каталоге.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                onClick={onAddAnotherGroup}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Добавить ещё одну группу
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full border-blue-500 text-blue-600 hover:bg-blue-50"
+                onClick={onBack}
+              >
+                <List className="mr-2 h-4 w-4" />
+                Перейти в мои группы
+              </Button>
+            </div>
+          </div>
+        ) : isAdmin ? (
           <div className="space-y-6">
             <div className="flex flex-col items-center text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-500">

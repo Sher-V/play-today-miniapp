@@ -2,15 +2,19 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { GroupRegistrationFlow } from '../components/GroupRegistrationFlow';
 import { AfterGroupSubmitScreen } from '../components/AfterGroupSubmitScreen';
+import { AddClubTrainerForm } from '../components/AddClubTrainerForm';
+import { Sheet, SheetContent } from '../components/ui/sheet';
 import { useTelegram } from '../../hooks/useTelegram';
 import type { GroupCreatorRole } from '../../lib/groupRegistrationStorage';
 
 export function AddGroupPage() {
   const navigate = useNavigate();
-  const { user: telegramUser, hapticFeedback } = useTelegram();
+  const { user: telegramUser } = useTelegram();
   const [afterSubmitRole, setAfterSubmitRole] = useState<GroupCreatorRole | null>(null);
   const [afterSubmitGroupId, setAfterSubmitGroupId] = useState<string | null>(null);
+  const [trainerWasExisting, setTrainerWasExisting] = useState(false);
   const [screen, setScreen] = useState<'form' | 'after'>('form');
+  const [showAddClubTrainerSheet, setShowAddClubTrainerSheet] = useState(false);
 
   const telegramUserName = [telegramUser?.first_name, telegramUser?.last_name]
     .filter(Boolean)
@@ -22,27 +26,46 @@ export function AddGroupPage() {
         role={afterSubmitRole}
         groupId={afterSubmitGroupId ?? undefined}
         telegramUserId={telegramUser?.id}
+        trainerWasExisting={trainerWasExisting}
         onBack={() => navigate('/my-groups')}
         onRegisterCoach={() => navigate('/register-coach')}
         onAddAnotherGroup={() => {
           setScreen('form');
           setAfterSubmitRole(null);
           setAfterSubmitGroupId(null);
+          setTrainerWasExisting(false);
         }}
       />
     );
   }
 
   return (
-    <GroupRegistrationFlow
-      telegramUserId={telegramUser?.id}
-      telegramUserName={telegramUserName}
-      onSuccess={(role, groupId) => {
-        setAfterSubmitRole(role);
-        setAfterSubmitGroupId(groupId);
-        setScreen('after');
-      }}
-      onBack={() => navigate('/')}
-    />
+    <>
+      <GroupRegistrationFlow
+        telegramUserId={telegramUser?.id}
+        telegramUserName={telegramUserName}
+        onSuccess={(role, groupId, opts) => {
+          setAfterSubmitRole(role);
+          setAfterSubmitGroupId(groupId);
+          setTrainerWasExisting(opts?.trainerWasExisting ?? false);
+          setScreen('after');
+        }}
+        onBack={() => navigate('/')}
+        onAddClubTrainerRequest={
+          telegramUser?.id ? () => setShowAddClubTrainerSheet(true) : undefined
+        }
+      />
+      <Sheet open={showAddClubTrainerSheet} onOpenChange={setShowAddClubTrainerSheet}>
+        <SheetContent side="bottom" className="h-[85vh] flex flex-col p-0">
+          {telegramUser?.id && (
+            <AddClubTrainerForm
+              adminUserId={telegramUser.id}
+              onSuccess={() => setShowAddClubTrainerSheet(false)}
+              onCancel={() => setShowAddClubTrainerSheet(false)}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

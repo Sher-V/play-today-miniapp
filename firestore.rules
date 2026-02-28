@@ -13,6 +13,11 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null && request.auth.uid == userId;
     }
 
+    match /clubTrainers/{trainerId} {
+      allow read: if true;
+      allow create, delete: if request.auth != null && request.resource.data.addedByUserId == int(request.auth.uid);
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

@@ -105,11 +105,12 @@ export function getTrainerInfoForGroup(
   trainerName: string,
   contact: string,
   trainersMap: Map<string, TrainerInfo>,
-  training: { userId?: number; coachPhotoUrl?: string; coachAbout?: string } | undefined
+  training: { userId?: number; coachUserId?: number; coachPhotoUrl?: string; coachAbout?: string } | undefined
 ): TrainerInfo {
   // 1. Пробуем взять из профиля тренера (coachMedia)
-  if (training?.userId != null) {
-    const profileTrainer = trainersMap.get(String(training.userId));
+  const trainerId = training?.coachUserId ?? training?.userId;
+  if (trainerId != null) {
+    const profileTrainer = trainersMap.get(String(trainerId));
     if (profileTrainer && (profileTrainer.media?.length || profileTrainer.photo)) {
       return {
         ...profileTrainer,

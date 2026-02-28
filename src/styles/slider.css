@@ -29,6 +29,12 @@
 /* Слайдер фото/видео в профиле */
 .media-slider {
   position: relative;
+  min-height: 14rem;
+}
+
+.media-slider .slick-list,
+.media-slider .slick-track {
+  height: 14rem;
 }
 
 .media-slider .slick-slide {
@@ -37,6 +43,7 @@
 
 .media-slider .slick-slide > div {
   height: 100%;
+  overflow: hidden;
 }
 
 .media-slider .slick-dots {

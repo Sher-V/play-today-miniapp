@@ -122,45 +122,49 @@ export function ProfileView({ profile, onBack, onEdit }: ProfileViewProps) {
 
         {/* Контент */}
         <div className="px-5 pb-6 space-y-4">
-          {/* Слайдер фото и видео */}
+          {/* Фото и видео — заголовок сверху, слайдер ниже */}
           {media.length > 0 && (
-            <div className="overflow-hidden rounded-xl bg-gray-100">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500">
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 pt-1">
                 Фото и видео
               </p>
-              <Slider
-                dots
-                infinite={media.length > 1}
-                speed={300}
-                slidesToShow={1}
-                slidesToScroll={1}
-                arrows={media.length > 1}
-                prevArrow={<MediaPrevArrow />}
-                nextArrow={<MediaNextArrow />}
-                className="media-slider relative"
-              >
-                {media.map((m) =>
-                  m.type === 'photo' && m.publicUrl ? (
-                    <div key={m.publicUrl}>
-                      <img
-                        src={m.publicUrl}
-                        alt=""
-                        className="w-full h-56 object-cover rounded-lg"
-                      />
-                    </div>
-                  ) : m.type === 'video' && m.publicUrl ? (
-                    <div key={m.publicUrl}>
-                      <video
-                        src={m.publicUrl}
-                        className="w-full h-56 object-cover rounded-lg"
-                        muted
-                        playsInline
-                        controls
-                      />
-                    </div>
-                  ) : null
-                )}
-              </Slider>
+              <div className="rounded-xl overflow-hidden bg-gray-100">
+                <Slider
+                  dots
+                  infinite={media.length > 1}
+                  speed={300}
+                  slidesToShow={1}
+                  slidesToScroll={1}
+                  arrows={media.length > 1}
+                  prevArrow={<MediaPrevArrow />}
+                  nextArrow={<MediaNextArrow />}
+                  className="media-slider relative"
+                >
+                  {media
+                    .filter((m) => m.publicUrl && (m.type === 'photo' || m.type === 'video'))
+                    .map((m, i) =>
+                      m.type === 'photo' ? (
+                        <div key={`${m.type}-${m.publicUrl}-${i}`}>
+                          <img
+                            src={m.publicUrl!}
+                            alt=""
+                            className="w-full h-56 object-cover rounded-lg"
+                          />
+                        </div>
+                      ) : (
+                        <div key={`${m.type}-${m.publicUrl}-${i}`}>
+                          <video
+                            src={m.publicUrl!}
+                            className="w-full h-56 object-cover rounded-lg"
+                            muted
+                            playsInline
+                            controls
+                          />
+                        </div>
+                      )
+                    )}
+                </Slider>
+              </div>
             </div>
           )}
 

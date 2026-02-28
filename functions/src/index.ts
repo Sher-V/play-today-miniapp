@@ -116,12 +116,11 @@ function buildTrainerNotificationMessage(opts: {
   training: TrainingInfo | null;
 }): string {
   const playerName = opts.pupilFirstName ?? 'Игрок';
-  const playerUsername = opts.pupilUsername ?? '';
   const training = opts.training;
 
   let msg =
     `👥 <b>Новая заявка на групповую тренировку!</b>\n\n` +
-    `<b>Игрок:</b> ${playerName}${playerUsername ? ` (@${playerUsername})` : ''}\n`;
+    `<b>Игрок:</b> ${playerName}\n`;
 
   if (training && (training.location || training.level || training.date || training.time)) {
     const courtName = training.location ?? '';

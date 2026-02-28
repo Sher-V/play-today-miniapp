@@ -17,6 +17,18 @@ export interface GroupTraining {
   coachName?: string; // Имя и фамилия тренера
   coachAbout?: string;
   coachPhotoUrl?: string;
+  coachUserId?: number; // Telegram ID тренера (для уведомлений, когда админ выбрал существующего)
+}
+
+/** Тренер, добавленный админом клуба для повторного использования */
+export interface ClubTrainer {
+  id: string;
+  addedByUserId: number; // Telegram ID админа
+  coachName: string;
+  contact: string;
+  coachPhotoUrl?: string;
+  coachAbout?: string;
+  createdAt: Date;
 }
 
 // Медиа-файл тренера (фото или видео)

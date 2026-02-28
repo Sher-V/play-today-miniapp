@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { format, addMonths } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Check, ChevronLeft, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, Check, ChevronLeft, Clock, User, UserPlus } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { setStoredGroupRole, type GroupCreatorRole } from '../../lib/groupRegistrationStorage';
 import { createGroupTraining } from '../../lib/createGroupTraining';
 import type { GroupTraining } from '../../lib/types';
+import { useGroupTrainings } from '../../hooks/useGroupTrainings';
+import { useClubTrainers } from '../../hooks/useClubTrainers';
 
 const LEVEL_OPTIONS: { value: GroupTraining['level']; label: string }[] = [
   { value: 'beginner', label: 'Начинающий 0-1' },
@@ -23,6 +25,18 @@ const LEVEL_OPTIONS: { value: GroupTraining['level']; label: string }[] = [
 const DURATION_OPTIONS = [1, 1.5, 2] as const;
 const GROUP_SIZE_OPTIONS = ['3-4', '5-6'] as const;
 
+export interface TrainerAtCourt {
+  /** "u-123" для тренера из групп, "c-abc" для тренера из клуба */
+  id: string;
+  userId?: number; // Telegram ID, только для тренеров из групп
+  clubTrainerId?: string; // doc id, только для тренеров клуба
+  trainerName: string;
+  coachName?: string;
+  contact: string;
+  coachPhotoUrl?: string;
+  coachAbout?: string;
+}
+
 export interface GroupFormData {
   role: GroupCreatorRole | null;
   courtName: string;
@@ -34,6 +48,9 @@ export interface GroupFormData {
   level: GroupTraining['level'] | null;
   priceSingle: string;
   contact: string;
+  /** Только для админа: новый тренер или существующий */
+  coachChoice?: 'new' | 'existing';
+  selectedTrainer?: TrainerAtCourt | null;
 }
 
 const defaultFormData: GroupFormData = {
@@ -47,13 +64,16 @@ const defaultFormData: GroupFormData = {
   level: null,
   priceSingle: '',
   contact: '',
+  coachChoice: 'new',
+  selectedTrainer: null,
 };
 
 interface GroupRegistrationFlowProps {
   telegramUserId: number | undefined;
   telegramUserName: string;
-  onSuccess: (role: GroupCreatorRole, groupId: string) => void;
+  onSuccess: (role: GroupCreatorRole, groupId: string, opts?: { trainerWasExisting?: boolean }) => void;
   onBack: () => void;
+  onAddClubTrainerRequest?: () => void;
 }
 
 export function GroupRegistrationFlow({
@@ -61,14 +81,67 @@ export function GroupRegistrationFlow({
   telegramUserName,
   onSuccess,
   onBack,
+  onAddClubTrainerRequest,
 }: GroupRegistrationFlowProps) {
   const [formData, setFormData] = useState<GroupFormData>(defaultFormData);
 
   const [submitting, setSubmitting] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
 
+  const isAdmin = formData.role === 'admin';
+  const { trainings: allTrainings } = useGroupTrainings(isAdmin);
+  const { trainers: clubTrainers } = useClubTrainers(telegramUserId, isAdmin);
+
+  const trainersAtCourt = useMemo(() => {
+    if (!isAdmin) return [];
+    const result: TrainerAtCourt[] = [];
+    const court = formData.courtName.trim().toLowerCase();
+
+    if (court.length >= 2) {
+      const byUserId = new Map<number, TrainerAtCourt>();
+      for (const t of allTrainings) {
+        if (!t.isActive || !t.courtName) continue;
+        if (t.courtName.trim().toLowerCase().includes(court) || court.includes(t.courtName.trim().toLowerCase())) {
+          const trainerId = t.coachUserId ?? t.userId;
+          const name = (t.coachName?.trim() || t.trainerName).trim();
+          if (!name) continue;
+          if (!byUserId.has(trainerId)) {
+            byUserId.set(trainerId, {
+              id: `u-${trainerId}`,
+              userId: trainerId,
+              trainerName: t.trainerName,
+              coachName: t.coachName,
+              contact: t.contact,
+            });
+          }
+        }
+      }
+      result.push(...Array.from(byUserId.values()));
+    }
+
+    for (const ct of clubTrainers) {
+      result.push({
+        id: `c-${ct.id}`,
+        clubTrainerId: ct.id,
+        trainerName: ct.coachName,
+        coachName: ct.coachName,
+        contact: ct.contact,
+        coachPhotoUrl: ct.coachPhotoUrl,
+        coachAbout: ct.coachAbout,
+      });
+    }
+
+    return result.sort((a, b) =>
+      (a.coachName || a.trainerName).localeCompare(b.coachName || b.trainerName)
+    );
+  }, [isAdmin, formData.courtName, allTrainings, clubTrainers]);
+
   const canProceedStep0 = formData.role != null;
-  const canProceedStep1 = formData.courtName.trim().length > 0;
+  const adminTrainerOk =
+    !isAdmin ||
+    formData.coachChoice === 'new' ||
+    (formData.coachChoice === 'existing' && formData.selectedTrainer != null);
+  const canProceedStep1 = formData.courtName.trim().length > 0 && adminTrainerOk;
   const isValidTime = /^\d{2}:\d{2}$/.test(formData.time);
   const canProceedStep2 = formData.date != null && isValidTime;
   const canProceedStep3 = formData.isRecurring !== null;
@@ -76,7 +149,12 @@ export function GroupRegistrationFlow({
   const canProceedStep5 = formData.groupSize === '3-4' || formData.groupSize === '5-6';
   const canProceedStep6 = formData.level != null;
   const canProceedStep7 = /^\d+$/.test(formData.priceSingle) && Number(formData.priceSingle) >= 0;
-  const canProceedStep8 = formData.contact.trim().length > 0;
+  const contactOk =
+    (isAdmin && formData.selectedTrainer
+      ? formData.selectedTrainer.contact
+      : formData.contact.trim()
+    ).length > 0;
+  const canProceedStep8 = contactOk;
 
   const stepChecks = [
     canProceedStep0,
@@ -94,6 +172,8 @@ export function GroupRegistrationFlow({
   const unlockedUntil = maxUnlockedStep === -1 ? 8 : maxUnlockedStep;
 
   const handleSubmit = async () => {
+    const effectiveContact =
+      isAdmin && formData.selectedTrainer ? formData.selectedTrainer.contact : formData.contact.trim();
     if (
       !formData.role ||
       !formData.courtName.trim() ||
@@ -104,15 +184,33 @@ export function GroupRegistrationFlow({
       (formData.groupSize !== '3-4' && formData.groupSize !== '5-6') ||
       !formData.level ||
       formData.priceSingle === '' ||
-      !formData.contact.trim()
+      !effectiveContact
     ) return;
 
     const dateTimeStr = `${format(formData.date, 'dd.MM')} ${formData.time}`;
+    const isAdminSubmit = formData.role === 'admin';
+    const sel = formData.selectedTrainer;
+    const trainerName =
+      isAdminSubmit && sel
+        ? (sel.coachName || sel.trainerName).trim()
+        : telegramUserName || 'Тренер';
+    const contact = isAdminSubmit && sel ? sel.contact : formData.contact.trim();
+
     setSubmitting(true);
     try {
+      const coachPayload =
+        isAdminSubmit && sel
+          ? {
+              coachName: (sel.coachName || sel.trainerName).trim(),
+              ...(sel.userId != null && { coachUserId: sel.userId }),
+              ...(sel.coachPhotoUrl && { coachPhotoUrl: sel.coachPhotoUrl }),
+              ...(sel.coachAbout?.trim() && { coachAbout: sel.coachAbout.trim() }),
+            }
+          : {};
+
       const groupId = await createGroupTraining({
         userId: telegramUserId ?? 0,
-        trainerName: telegramUserName || 'Тренер',
+        trainerName,
         courtName: formData.courtName.trim(),
         dateTime: dateTimeStr,
         isRecurring: formData.isRecurring,
@@ -120,9 +218,12 @@ export function GroupRegistrationFlow({
         groupSize: formData.groupSize as '3-4' | '5-6',
         level: formData.level,
         priceSingle: Number(formData.priceSingle),
-        contact: formData.contact.trim(),
+        contact,
+        ...coachPayload,
       });
-      onSuccess(formData.role, groupId);
+      onSuccess(formData.role, groupId, {
+        trainerWasExisting: isAdminSubmit && !!sel,
+      });
     } catch (e) {
       toast.error('Не удалось добавить группу', {
         description: e instanceof Error ? e.message : 'Проверьте подключение и настройки Firebase.',
@@ -143,7 +244,7 @@ export function GroupRegistrationFlow({
           size="sm"
           className="whitespace-normal text-center"
           onClick={() => {
-              setFormData((p) => ({ ...p, role: 'coach' }));
+              setFormData((p) => ({ ...p, role: 'coach', coachChoice: undefined, selectedTrainer: null }));
               setStoredGroupRole(telegramUserId, 'coach');
             }}
         >
@@ -154,7 +255,7 @@ export function GroupRegistrationFlow({
           size="sm"
           className="whitespace-normal text-center leading-tight"
           onClick={() => {
-              setFormData((p) => ({ ...p, role: 'admin' }));
+              setFormData((p) => ({ ...p, role: 'admin', coachChoice: 'new', selectedTrainer: null }));
               setStoredGroupRole(telegramUserId, 'admin');
             }}
         >
@@ -171,9 +272,87 @@ export function GroupRegistrationFlow({
       <Input
         placeholder="Например: ТК «Коломенский»"
         value={formData.courtName}
-        onChange={(e) => setFormData((p) => ({ ...p, courtName: e.target.value }))}
+        onChange={(e) =>
+          setFormData((p) => ({
+            ...p,
+            courtName: e.target.value,
+            selectedTrainer: p.coachChoice === 'existing' ? null : p.selectedTrainer,
+          }))
+        }
         className="h-9 border-gray-300 bg-white focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20"
       />
+      {isAdmin && (
+        <div className="space-y-2 pt-2 border-t border-gray-100">
+          {onAddClubTrainerRequest && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 -ml-1 mb-1"
+              onClick={onAddClubTrainerRequest}
+            >
+              <UserPlus className="mr-1.5 h-4 w-4" />
+              Добавить тренера в клуб
+            </Button>
+          )}
+          {formData.courtName.trim().length >= 2 && (
+            <>
+          <Label className="text-xs text-gray-600">Тренер</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant={formData.coachChoice === 'new' ? 'primary' : 'outline'}
+              size="sm"
+              className="h-9 justify-start gap-2"
+              onClick={() =>
+                setFormData((p) => ({ ...p, coachChoice: 'new', selectedTrainer: null }))
+              }
+            >
+              <UserPlus className="h-4 w-4 shrink-0" />
+              Новый
+            </Button>
+            <Button
+              variant={formData.coachChoice === 'existing' ? 'primary' : 'outline'}
+              size="sm"
+              className="h-9 justify-start gap-2"
+              onClick={() =>
+                setFormData((p) => ({
+                  ...p,
+                  coachChoice: 'existing',
+                  selectedTrainer: trainersAtCourt[0] ?? null,
+                }))
+              }
+            >
+              <User className="h-4 w-4 shrink-0" />
+              Существующий
+            </Button>
+          </div>
+          {formData.coachChoice === 'existing' && trainersAtCourt.length > 0 && (
+            <select
+              value={formData.selectedTrainer?.id ?? ''}
+              onChange={(e) => {
+                const id = e.target.value;
+                const t = trainersAtCourt.find((x) => x.id === id);
+                setFormData((p) => ({ ...p, selectedTrainer: t ?? null }));
+              }}
+              className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="">Выберите тренера</option>
+              {trainersAtCourt.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.coachName || t.trainerName} — {t.contact}
+                </option>
+              ))}
+            </select>
+          )}
+          {formData.coachChoice === 'existing' && trainersAtCourt.length === 0 && (
+            <p className="text-xs text-amber-600">
+              На этом корте пока нет групп и тренеров клуба. Выберите «Новый» или добавьте тренера в клуб выше.
+            </p>
+          )}
+            </>
+          )}
+        </div>
+      )}
     </div>,
     /* Step 2 */
     <div key="2" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">

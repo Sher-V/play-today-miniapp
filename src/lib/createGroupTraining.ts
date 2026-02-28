@@ -13,10 +13,15 @@ export interface CreateGroupTrainingInput {
   level: GroupTraining['level'];
   priceSingle: number;
   contact: string;
+  /** Telegram ID тренера — для уведомлений, когда админ выбрал существующего */
+  coachUserId?: number;
+  coachName?: string;
+  coachPhotoUrl?: string;
+  coachAbout?: string;
 }
 
 export async function createGroupTraining(data: CreateGroupTrainingInput): Promise<string> {
-  const docRef = await addDoc(collection(db, 'groupTrainings'), {
+  const doc: Record<string, unknown> = {
     userId: data.userId,
     trainerName: data.trainerName,
     courtName: data.courtName,
@@ -29,13 +34,18 @@ export async function createGroupTraining(data: CreateGroupTrainingInput): Promi
     contact: data.contact,
     createdAt: Timestamp.now(),
     isActive: true,
-  });
+  };
+  if (data.coachUserId != null) doc.coachUserId = data.coachUserId;
+  if (data.coachName != null) doc.coachName = data.coachName;
+  if (data.coachPhotoUrl != null) doc.coachPhotoUrl = data.coachPhotoUrl;
+  if (data.coachAbout != null) doc.coachAbout = data.coachAbout;
+  const docRef = await addDoc(collection(db, 'groupTrainings'), doc);
   return docRef.id;
 }
 
 export async function updateGroupTrainingCoachInfo(
   groupId: string,
-  data: { coachName?: string; coachAbout?: string; coachPhotoUrl?: string }
+  data: { coachName?: string; coachAbout?: string; coachPhotoUrl?: string; coachUserId?: number }
 ): Promise<void> {
   const docRef = doc(db, 'groupTrainings', groupId);
   await updateDoc(docRef, data);
@@ -54,6 +64,7 @@ export interface UpdateGroupTrainingInput {
   coachName?: string;
   coachAbout?: string;
   coachPhotoUrl?: string;
+  coachUserId?: number;
 }
 
 export async function getGroupTraining(groupId: string): Promise<GroupTraining | null> {
