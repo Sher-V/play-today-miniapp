@@ -1,6 +1,17 @@
 import { addDoc, collection, Timestamp } from 'firebase/firestore';
-import { db } from './firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from './firebase';
 import type { ClubTrainer } from './types';
+
+/** Загружает фото тренера клуба в Storage, возвращает публичный URL */
+export async function uploadClubTrainerPhoto(adminUserId: number, file: File): Promise<string> {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const safeExt = ext === 'jpeg' ? 'jpg' : ext;
+  const path = `coach-media/club/${adminUserId}/${Date.now()}_photo.${safeExt}`;
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, file);
+  return getDownloadURL(storageRef);
+}
 
 export interface CreateClubTrainerInput {
   addedByUserId: number;

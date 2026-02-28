@@ -3,7 +3,7 @@ import { Loader2, Upload, User, UserPlus } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { createClubTrainer } from '../../lib/createClubTrainer';
+import { createClubTrainer, uploadClubTrainerPhoto } from '../../lib/createClubTrainer';
 import { toast } from 'sonner';
 
 const COACH_ABOUT_PLACEHOLDER =
@@ -28,10 +28,11 @@ export function AddClubTrainerForm({
   useEffect(() => {
     setCoachName(initialCoachName);
   }, [initialCoachName]);
-  const [coachPhotoUrl, setCoachPhotoUrl] = useState<string | null>(null);
+  const [coachPhotoPreview, setCoachPhotoPreview] = useState<string | null>(null);
   const [coachAbout, setCoachAbout] = useState('');
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoFileRef = useRef<File | null>(null);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -40,9 +41,15 @@ export function AddClubTrainerForm({
       toast.error('Выберите изображение (JPG или PNG)');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setCoachPhotoUrl(reader.result as string);
-    reader.readAsDataURL(file);
+    photoFileRef.current = file;
+    setCoachPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const clearPhoto = () => {
+    if (coachPhotoPreview) URL.revokeObjectURL(coachPhotoPreview);
+    setCoachPhotoPreview(null);
+    photoFileRef.current = null;
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSave = async () => {
@@ -58,11 +65,15 @@ export function AddClubTrainerForm({
     }
     setSaving(true);
     try {
+      let photoUrl: string | undefined;
+      if (photoFileRef.current) {
+        photoUrl = await uploadClubTrainerPhoto(adminUserId, photoFileRef.current);
+      }
       await createClubTrainer({
         addedByUserId: adminUserId,
         coachName: name,
         contact: cont,
-        coachPhotoUrl: coachPhotoUrl || undefined,
+        coachPhotoUrl: photoUrl,
         coachAbout: coachAbout.trim() || undefined,
       });
       toast.success('Тренер добавлен в клуб. Теперь его можно выбрать при создании групп.');
@@ -114,20 +125,17 @@ export function AddClubTrainerForm({
           <Label className="text-sm font-medium text-gray-700">Фото тренера</Label>
           <div className="flex gap-3 items-start">
             <div className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 overflow-hidden">
-              {coachPhotoUrl ? (
+              {coachPhotoPreview ? (
                 <>
                   <img
-                    src={coachPhotoUrl}
+                    src={coachPhotoPreview}
                     alt="Фото тренера"
                     className="h-full w-full object-cover"
                   />
                   <button
                     type="button"
                     className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700 shadow"
-                    onClick={() => {
-                      setCoachPhotoUrl(null);
-                      if (fileInputRef.current) fileInputRef.current.value = '';
-                    }}
+                    onClick={clearPhoto}
                     title="Удалить фото"
                   >
                     ×
