@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ChevronLeft, CheckCircle, UserCircle, AlertTriangle, Loader2, Upload, User, Plus, List } from 'lucide-react';
+import { ChevronLeft, CheckCircle, Loader2, Upload, User, Plus, List } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -86,7 +86,9 @@ export function AfterGroupSubmitScreen({
           <CheckCircle className="h-6 w-6 text-white" />
         </div>
         <p className="pt-0.5 text-sm font-medium text-gray-900">
-          Группа успешно зарегистрирована и будет отображаться пользователям! 🎉
+          {showCoachRegistration
+            ? 'Группа успешно зарегистрирована. Пока она не отображается пользователям — пройдите регистрацию тренера, чтобы группа появилась в каталоге.'
+            : 'Группа успешно зарегистрирована и будет отображаться пользователям! 🎉'}
         </p>
       </div>
 
@@ -225,35 +227,24 @@ export function AfterGroupSubmitScreen({
           </div>
         ) : showCoachRegistration ? (
           <div className="space-y-5">
-            <div className="flex flex-col items-center text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-500">
-                <UserCircle className="h-10 w-10 text-white" />
-              </div>
-              <h2 className="mt-3 text-lg font-bold text-gray-900">
-                Зарегистрируйтесь как тренер
-              </h2>
-            </div>
+            <h2 className="text-lg font-bold text-gray-900 text-center">
+              Осталось ещё чуть-чуть!
+            </h2>
 
-            <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
-                <p className="text-sm text-gray-800">
-                  Ваша группа отображается <span className="font-bold text-amber-700">БЕЗ фотографии</span>
-                </p>
-              </div>
-              <div className="flex items-start gap-2 pl-7">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-                <p className="text-sm text-gray-700">
-                  Добавьте профиль с фото — привлеките больше учеников и получите дополнительный трафик
-                </p>
-              </div>
+            <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
+              <p>
+                Для корректного отображения группы для пользователей с вашим фото и именем, просим пройти регистрацию в сервисе Play Today.
+              </p>
+              <p>
+                Это займёт 1 минуту. Вы также по своему желанию сможете предлагать игрокам индивидуальные и сплит тренировки. Сейчас это для вас бесплатно.
+              </p>
             </div>
 
             <Button
               className="h-auto min-h-[3rem] w-full whitespace-normal py-4 text-center text-base font-semibold leading-tight bg-blue-600 hover:bg-blue-700"
               onClick={onRegisterCoach}
             >
-              Зарегистрироваться как тренер
+              Пройти регистрацию тренера
             </Button>
           </div>
         ) : null}
