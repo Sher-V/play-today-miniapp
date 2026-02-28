@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format, addMonths } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Check, ChevronLeft, Clock } from 'lucide-react';
@@ -8,7 +8,7 @@ import { Label } from './ui/label';
 import { Calendar } from './ui/calendar';
 import { cn } from './ui/utils';
 import { toast } from 'sonner';
-import { getStoredGroupRole, setStoredGroupRole, type GroupCreatorRole } from '../../lib/groupRegistrationStorage';
+import { setStoredGroupRole, type GroupCreatorRole } from '../../lib/groupRegistrationStorage';
 import { createGroupTraining } from '../../lib/createGroupTraining';
 import type { GroupTraining } from '../../lib/types';
 
@@ -62,21 +62,10 @@ export function GroupRegistrationFlow({
   onSuccess,
   onBack,
 }: GroupRegistrationFlowProps) {
-  const [formData, setFormData] = useState<GroupFormData>(() => {
-    const stored = getStoredGroupRole(telegramUserId);
-    return { ...defaultFormData, role: stored };
-  });
+  const [formData, setFormData] = useState<GroupFormData>(defaultFormData);
 
   const [submitting, setSubmitting] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
-
-  // Pre-fill role from storage when component mounts
-  useEffect(() => {
-    const stored = getStoredGroupRole(telegramUserId);
-    if (stored) {
-      setFormData((prev) => ({ ...prev, role: stored }));
-    }
-  }, [telegramUserId]);
 
   const canProceedStep0 = formData.role != null;
   const canProceedStep1 = formData.courtName.trim().length > 0;
