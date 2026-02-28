@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ChevronLeft, CheckCircle, Loader2, Upload, User, Plus, List } from 'lucide-react';
+import { ChevronLeft, CheckCircle, Loader2, Upload, User, Plus, List, AlertTriangle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -80,17 +80,27 @@ export function AfterGroupSubmitScreen({
         </Button>
       </div>
 
-      {/* Баннер успеха */}
+      {/* Шаг 1: Зелёный — успешная регистрация группы */}
       <div className="flex items-start gap-3 rounded-lg border border-green-300 bg-green-50 p-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500">
           <CheckCircle className="h-6 w-6 text-white" />
         </div>
         <p className="pt-0.5 text-sm font-medium text-gray-900">
-          {showCoachRegistration
-            ? 'Группа успешно зарегистрирована. Пока она не отображается пользователям — пройдите регистрацию тренера, чтобы группа появилась в каталоге.'
-            : 'Группа успешно зарегистрирована и будет отображаться пользователям! 🎉'}
+          Группа успешно зарегистрирована{!showCoachRegistration && ' и будет отображаться пользователям! 🎉'}
         </p>
       </div>
+
+      {/* Шаг 2: Жёлтый — нужно ещё кое-что сделать (только для тренера без профиля) */}
+      {showCoachRegistration && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500">
+            <AlertTriangle className="h-6 w-6 text-white" />
+          </div>
+          <p className="pt-0.5 text-sm font-medium text-gray-900">
+            Пока группа не отображается пользователям — пройдите регистрацию тренера, чтобы она появилась в каталоге.
+          </p>
+        </div>
+      )}
 
       {/* Карточка: регистрация тренера / загрузка фото (админ) / уже тренер */}
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
