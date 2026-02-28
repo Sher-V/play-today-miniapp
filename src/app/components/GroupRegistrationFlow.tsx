@@ -48,8 +48,8 @@ export interface GroupFormData {
   level: GroupTraining['level'] | null;
   priceSingle: string;
   contact: string;
-  /** Только для админа: новый тренер или существующий */
-  coachChoice?: 'new' | 'existing';
+  /** Только для админа: поиск по имени тренера */
+  trainerSearchQuery?: string;
   selectedTrainer?: TrainerAtCourt | null;
 }
 
@@ -64,7 +64,7 @@ const defaultFormData: GroupFormData = {
   level: null,
   priceSingle: '',
   contact: '',
-  coachChoice: 'new',
+  trainerSearchQuery: '',
   selectedTrainer: null,
 };
 
@@ -73,7 +73,8 @@ interface GroupRegistrationFlowProps {
   telegramUserName: string;
   onSuccess: (role: GroupCreatorRole, groupId: string, opts?: { trainerWasExisting?: boolean }) => void;
   onBack: () => void;
-  onAddClubTrainerRequest?: () => void;
+  /** Открыть форму добавления тренера в клуб. initialName — подставить в поле имени */
+  onAddClubTrainerRequest?: (initialName?: string) => void;
 }
 
 export function GroupRegistrationFlow({
@@ -136,11 +137,18 @@ export function GroupRegistrationFlow({
     );
   }, [isAdmin, formData.courtName, allTrainings, clubTrainers]);
 
+  const trainerSearch = (formData.trainerSearchQuery ?? '').trim().toLowerCase();
+  const filteredTrainers = useMemo(() => {
+    if (!trainerSearch) return trainersAtCourt;
+    return trainersAtCourt.filter((t) => {
+      const name = (t.coachName || t.trainerName).toLowerCase();
+      return name.includes(trainerSearch);
+    });
+  }, [trainersAtCourt, trainerSearch]);
+
   const canProceedStep0 = formData.role != null;
   const canProceedCourt = formData.courtName.trim().length > 0;
-  const adminTrainerOk =
-    formData.coachChoice === 'new' ||
-    (formData.coachChoice === 'existing' && formData.selectedTrainer != null);
+  const adminTrainerOk = formData.selectedTrainer != null;
   const isValidTime = /^\d{2}:\d{2}$/.test(formData.time);
   const canProceedDate = formData.date != null && isValidTime;
   const canProceedRecurring = formData.isRecurring !== null;
@@ -243,7 +251,7 @@ export function GroupRegistrationFlow({
           size="sm"
           className="whitespace-normal text-center"
           onClick={() => {
-              setFormData((p) => ({ ...p, role: 'coach', coachChoice: undefined, selectedTrainer: null }));
+              setFormData((p) => ({ ...p, role: 'coach', trainerSearchQuery: '', selectedTrainer: null }));
               setStoredGroupRole(telegramUserId, 'coach');
             }}
         >
@@ -254,7 +262,7 @@ export function GroupRegistrationFlow({
           size="sm"
           className="whitespace-normal text-center leading-tight"
           onClick={() => {
-              setFormData((p) => ({ ...p, role: 'admin', coachChoice: 'new', selectedTrainer: null }));
+              setFormData((p) => ({ ...p, role: 'admin', trainerSearchQuery: '', selectedTrainer: null }));
               setStoredGroupRole(telegramUserId, 'admin');
             }}
         >
@@ -275,7 +283,7 @@ export function GroupRegistrationFlow({
           setFormData((p) => ({
             ...p,
             courtName: e.target.value,
-            selectedTrainer: p.coachChoice === 'existing' ? null : p.selectedTrainer,
+            selectedTrainer: null,
           }))
         }
         className="h-9 border-gray-300 bg-white focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20"
@@ -287,68 +295,74 @@ export function GroupRegistrationFlow({
           <div key="trainer" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
             <h3 className="font-semibold text-sm text-gray-900">Шаг 3</h3>
             <Label className="text-xs text-gray-600">Тренер группы</Label>
-            {onAddClubTrainerRequest && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 -ml-1 mb-1"
-                onClick={onAddClubTrainerRequest}
-              >
-                <UserPlus className="mr-1.5 h-4 w-4" />
-                Добавить тренера в клуб
-              </Button>
+            <Input
+              placeholder="Начните вводить имя тренера..."
+              value={formData.trainerSearchQuery ?? ''}
+              onChange={(e) =>
+                setFormData((p) => ({
+                  ...p,
+                  trainerSearchQuery: e.target.value,
+                  selectedTrainer: null,
+                }))
+              }
+              className="h-9 border-gray-300 bg-white focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20"
+            />
+            {formData.selectedTrainer && (
+              <p className="text-xs text-green-600">
+                Отлично, данный тренер уже зарегистрирован
+              </p>
             )}
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={formData.coachChoice === 'new' ? 'primary' : 'outline'}
-                size="sm"
-                className="h-9 justify-start gap-2"
-                onClick={() =>
-                  setFormData((p) => ({ ...p, coachChoice: 'new', selectedTrainer: null }))
-                }
-              >
-                <UserPlus className="h-4 w-4 shrink-0" />
-                Новый
-              </Button>
-              <Button
-                variant={formData.coachChoice === 'existing' ? 'primary' : 'outline'}
-                size="sm"
-                className="h-9 justify-start gap-2"
-                onClick={() =>
-                  setFormData((p) => ({
-                    ...p,
-                    coachChoice: 'existing',
-                    selectedTrainer: trainersAtCourt[0] ?? null,
-                  }))
-                }
-              >
-                <User className="h-4 w-4 shrink-0" />
-                Существующий
-              </Button>
-            </div>
-            {formData.coachChoice === 'existing' && trainersAtCourt.length > 0 && (
+            {filteredTrainers.length > 0 && !formData.selectedTrainer && (
               <select
-                value={formData.selectedTrainer?.id ?? ''}
+                value=""
                 onChange={(e) => {
                   const id = e.target.value;
-                  const t = trainersAtCourt.find((x) => x.id === id);
-                  setFormData((p) => ({ ...p, selectedTrainer: t ?? null }));
+                  const t = filteredTrainers.find((x) => x.id === id);
+                  setFormData((p) => ({
+                    ...p,
+                    selectedTrainer: t ?? null,
+                    trainerSearchQuery: t ? (t.coachName || t.trainerName) : p.trainerSearchQuery,
+                  }));
                 }}
                 className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
-                <option value="">Выберите тренера</option>
-                {trainersAtCourt.map((t) => (
+                <option value="">Выберите тренера из списка</option>
+                {filteredTrainers.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.coachName || t.trainerName} — {t.contact}
                   </option>
                 ))}
               </select>
             )}
-            {formData.coachChoice === 'existing' && trainersAtCourt.length === 0 && (
-              <p className="text-xs text-amber-600">
-                На корте пока нет групп и тренеров клуба. Выберите «Новый» или добавьте тренера в клуб выше.
-              </p>
+            {(trainerSearch.length >= 2 || trainersAtCourt.length === 0) &&
+              filteredTrainers.length === 0 &&
+              onAddClubTrainerRequest && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                onClick={() =>
+                  onAddClubTrainerRequest(formData.trainerSearchQuery?.trim() || undefined)
+                }
+              >
+                <UserPlus className="mr-1.5 h-4 w-4" />
+                Добавить тренера
+              </Button>
+            )}
+            {formData.selectedTrainer && (
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
+                <span className="font-medium text-gray-900">
+                  {formData.selectedTrainer.coachName || formData.selectedTrainer.trainerName}
+                </span>
+                <button
+                  type="button"
+                  className="text-gray-500 hover:text-gray-700"
+                  onClick={() => setFormData((p) => ({ ...p, selectedTrainer: null }))}
+                >
+                  Изменить
+                </button>
+              </div>
             )}
           </div>,
         ]

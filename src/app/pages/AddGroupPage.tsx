@@ -15,6 +15,7 @@ export function AddGroupPage() {
   const [trainerWasExisting, setTrainerWasExisting] = useState(false);
   const [screen, setScreen] = useState<'form' | 'after'>('form');
   const [showAddClubTrainerSheet, setShowAddClubTrainerSheet] = useState(false);
+  const [addClubTrainerInitialName, setAddClubTrainerInitialName] = useState<string | undefined>();
 
   const telegramUserName = [telegramUser?.first_name, telegramUser?.last_name]
     .filter(Boolean)
@@ -52,16 +53,34 @@ export function AddGroupPage() {
         }}
         onBack={() => navigate('/')}
         onAddClubTrainerRequest={
-          telegramUser?.id ? () => setShowAddClubTrainerSheet(true) : undefined
+          telegramUser?.id
+            ? (initialName) => {
+                setAddClubTrainerInitialName(initialName);
+                setShowAddClubTrainerSheet(true);
+              }
+            : undefined
         }
       />
-      <Sheet open={showAddClubTrainerSheet} onOpenChange={setShowAddClubTrainerSheet}>
+      <Sheet
+        open={showAddClubTrainerSheet}
+        onOpenChange={(open) => {
+          setShowAddClubTrainerSheet(open);
+          if (!open) setAddClubTrainerInitialName(undefined);
+        }}
+      >
         <SheetContent side="bottom" className="h-[85vh] flex flex-col p-0">
           {telegramUser?.id && (
             <AddClubTrainerForm
               adminUserId={telegramUser.id}
-              onSuccess={() => setShowAddClubTrainerSheet(false)}
-              onCancel={() => setShowAddClubTrainerSheet(false)}
+              initialCoachName={addClubTrainerInitialName}
+              onSuccess={() => {
+                setShowAddClubTrainerSheet(false);
+                setAddClubTrainerInitialName(undefined);
+              }}
+              onCancel={() => {
+                setShowAddClubTrainerSheet(false);
+                setAddClubTrainerInitialName(undefined);
+              }}
             />
           )}
         </SheetContent>

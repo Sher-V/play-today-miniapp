@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2, Upload, User, UserPlus } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -13,15 +13,21 @@ interface AddClubTrainerFormProps {
   adminUserId: number;
   onSuccess: () => void;
   onCancel: () => void;
+  /** Подставить в поле имени при открытии */
+  initialCoachName?: string;
 }
 
 export function AddClubTrainerForm({
   adminUserId,
   onSuccess,
   onCancel,
+  initialCoachName = '',
 }: AddClubTrainerFormProps) {
-  const [coachName, setCoachName] = useState('');
+  const [coachName, setCoachName] = useState(initialCoachName);
   const [contact, setContact] = useState('');
+  useEffect(() => {
+    setCoachName(initialCoachName);
+  }, [initialCoachName]);
   const [coachPhotoUrl, setCoachPhotoUrl] = useState<string | null>(null);
   const [coachAbout, setCoachAbout] = useState('');
   const [saving, setSaving] = useState(false);
