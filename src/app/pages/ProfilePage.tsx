@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { CoachRegistrationFlow } from '../components/CoachRegistrationFlow';
+import { ProfileView } from '../components/ProfileView';
 import { useTelegram } from '../../hooks/useTelegram';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { toast } from 'sonner';
@@ -10,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 
 export function ProfilePage() {
   const navigate = useNavigate();
+  const [isEditMode, setIsEditMode] = useState(false);
   const { user: telegramUser, hapticFeedback } = useTelegram();
   const userId = telegramUser?.id != null ? String(telegramUser.id) : undefined;
   const { profile, loading, error } = useUserProfile(userId);
@@ -32,7 +34,7 @@ export function ProfilePage() {
       );
       hapticFeedback('success');
       toast.success('Профиль сохранён');
-      navigate('/my-groups');
+      setIsEditMode(false);
     } catch (e) {
       hapticFeedback('error');
       toast.error('Не удалось сохранить профиль', {
@@ -80,27 +82,42 @@ export function ProfilePage() {
     );
   }
 
-  const hasCoachData = profile && (profile.isCoach || profile.coachName);
-  const initialData = hasCoachData
-    ? {
-        name: profile!.coachName ?? '',
-        districts: coachDistrictsLabelsToIds(profile!.coachDistricts ?? []),
-        priceIndividual: String(profile!.coachPriceIndividual ?? 0),
-        priceSplit: String(profile!.coachPriceSplit ?? 0),
-        priceGroup: String(profile!.coachPriceGroup ?? 0),
-        availableDays: profile!.coachAvailableDays ?? [],
-        about: profile!.coachAbout ?? '',
-        coachContact: profile!.coachContact ?? '',
-        existingCoachMedia: profile!.coachMedia ?? [],
-      }
-    : undefined;
+  if (isEditMode) {
+    const hasCoachData = profile && (profile.isCoach || profile.coachName);
+    const initialData = hasCoachData && profile
+      ? {
+          name: profile.coachName ?? '',
+          districts: coachDistrictsLabelsToIds(profile.coachDistricts ?? []),
+          priceIndividual: String(profile.coachPriceIndividual ?? 0),
+          priceSplit: String(profile.coachPriceSplit ?? 0),
+          priceGroup: String(profile.coachPriceGroup ?? 0),
+          availableDays: profile.coachAvailableDays ?? [],
+          about: profile.coachAbout ?? '',
+          coachContact: profile.coachContact ?? '',
+          existingCoachMedia: profile.coachMedia ?? [],
+        }
+      : undefined;
+
+    return (
+      <CoachRegistrationFlow
+        onBack={() => setIsEditMode(false)}
+        onSubmit={handleSubmit}
+        initialData={initialData}
+        isEditMode={!!hasCoachData}
+      />
+    );
+  }
+
+  const displayProfile: import('../../lib/types').UserProfile = profile ?? {
+    id: userId ?? '',
+    name: telegramUserName,
+  };
 
   return (
-    <CoachRegistrationFlow
+    <ProfileView
+      profile={displayProfile}
       onBack={() => navigate('/')}
-      onSubmit={handleSubmit}
-      initialData={initialData}
-      isEditMode={!!hasCoachData}
+      onEdit={() => setIsEditMode(true)}
     />
   );
 }
