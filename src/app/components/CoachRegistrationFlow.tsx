@@ -656,7 +656,7 @@ export function CoachRegistrationFlow({
         ))}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-4">
         <Button
           className="flex-1 bg-blue-600 hover:bg-blue-700"
           onClick={handleSubmit}

@@ -301,8 +301,8 @@ export default function App() {
         </div>
       </header>
 
-      {/* Основной контент */}
-      <main className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
+      {/* Основной контент — отступ снизу с учётом safe-area на всех страницах */}
+      <main className="max-w-7xl mx-auto px-4 pt-4 sm:pt-8 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-[max(2rem,env(safe-area-inset-bottom))]">
         <Routes>
           <Route path="/add-group" element={<AddGroupPage />} />
           <Route path="/register-coach" element={<RegisterCoachPage />} />

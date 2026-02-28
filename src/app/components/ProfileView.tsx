@@ -130,7 +130,7 @@ export function ProfileView({ profile, onBack, onEdit, onRegisterCoach }: Profil
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 pt-1">
                 Фото и видео
               </p>
-              <div className="rounded-xl overflow-hidden bg-gray-100">
+              <div className="rounded-xl overflow-hidden bg-gray-100 touch-pan-x select-none" style={{ touchAction: 'pan-x' }}>
                 <Slider
                   dots
                   infinite={media.length > 1}
