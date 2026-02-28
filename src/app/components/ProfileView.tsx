@@ -187,7 +187,7 @@ export function ProfileView({ profile, onBack, onEdit, onRegisterCoach }: Profil
             </div>
           )}
 
-          {/* Цены */}
+          {/* Цены тренировок */}
           {(profile.coachPriceIndividual != null ||
             profile.coachPriceSplit != null ||
             profile.coachPriceGroup != null) && (
@@ -197,12 +197,12 @@ export function ProfileView({ profile, onBack, onEdit, onRegisterCoach }: Profil
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Цены
+                  Цены тренировок
                 </p>
                 <div className="mt-1.5 flex flex-wrap gap-2">
                   {profile.coachPriceIndividual != null && profile.coachPriceIndividual > 0 && (
                     <span className="inline-flex items-center rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-gray-800 shadow-sm ring-1 ring-gray-200/80">
-                      Индив.: {profile.coachPriceIndividual.toLocaleString('ru-RU')} ₽/час
+                      Индивидуальная: {profile.coachPriceIndividual.toLocaleString('ru-RU')} ₽/час
                     </span>
                   )}
                   {profile.coachPriceSplit != null && profile.coachPriceSplit > 0 && (
