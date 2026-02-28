@@ -7,6 +7,7 @@ import { BookingDialog } from './components/BookingDialog';
 import { AddGroupPage } from './pages/AddGroupPage';
 import { MyGroupsPage } from './pages/MyGroupsPage';
 import { EditGroupPage } from './pages/EditGroupPage';
+import { RegisterCoachPage } from './pages/RegisterCoachPage';
 import { Users, Loader2, Menu, List, LayoutGrid } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
 import {
@@ -41,6 +42,7 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const isListPage = location.pathname === '/';
+  const isRegisterCoachPage = location.pathname === '/register-coach';
   const hasAttemptedAuth = useRef(false);
 
   // Вход в Firebase Auth по Telegram initData (для Firestore/Storage rules: request.auth.uid == userId)
@@ -220,6 +222,7 @@ export default function App() {
               </h1>
               <p className="text-xs sm:text-sm text-gray-600">
                 {isAddGroupPage && 'Добавление группы'}
+                {isRegisterCoachPage && 'Регистрация тренера'}
                 {location.pathname.startsWith('/my-groups') && 'Мои тренировки'}
                 {isListPage && telegramUser && `Найдено групп: ${filteredGroups.length}`}
                 {isListPage && !telegramUser && 'Откройте в Telegram'}
@@ -242,6 +245,10 @@ export default function App() {
                   <LayoutGrid className="mr-2 h-4 w-4" />
                   Все тренировки
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/register-coach')}>
+                  <Users className="mr-2 h-4 w-4" />
+                  Регистрация тренера
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -252,6 +259,7 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
         <Routes>
           <Route path="/add-group" element={<AddGroupPage />} />
+          <Route path="/register-coach" element={<RegisterCoachPage />} />
           <Route path="/my-groups" element={<MyGroupsPage />} />
           <Route path="/my-groups/:id" element={<EditGroupPage />} />
           <Route
