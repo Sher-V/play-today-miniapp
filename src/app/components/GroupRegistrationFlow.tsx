@@ -417,9 +417,9 @@ export function GroupRegistrationFlow({
             value={formData.time}
             onChange={(e) => {
               const v = e.target.value.replace(/\D/g, '');
-              if (v.length <= 2) setFormData((p) => ({ ...p, time: v }));
-              else if (v.length <= 4)
-                setFormData((p) => ({ ...p, time: `${v.slice(0, 2)}:${v.slice(2, 4)}` }));
+              if (v.length === 0) setFormData((p) => ({ ...p, time: '' }));
+              else if (v.length === 1) setFormData((p) => ({ ...p, time: v }));
+              else if (v.length === 2) setFormData((p) => ({ ...p, time: `${v}:` }));
               else setFormData((p) => ({ ...p, time: `${v.slice(0, 2)}:${v.slice(2, 4)}` }));
             }}
             placeholder="--:--"
