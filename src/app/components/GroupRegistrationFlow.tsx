@@ -409,6 +409,25 @@ export function GroupRegistrationFlow({
               else if (v.length === 2) setFormData((p) => ({ ...p, time: `${v}:` }));
               else setFormData((p) => ({ ...p, time: `${v.slice(0, 2)}:${v.slice(2, 4)}` }));
             }}
+            onKeyDown={(e) => {
+              if (e.key !== 'Backspace') return;
+              const t = formData.time;
+              // Два цифры и двоеточие (напр. "16:") — удаляем последнюю цифру часов, курсор после первой
+              if (/^\d{2}:$/.test(t)) {
+                e.preventDefault();
+                const next = t[0] + ':';
+                setFormData((p) => ({ ...p, time: next }));
+                const input = e.currentTarget;
+                setTimeout(() => input.setSelectionRange(1, 1), 0);
+              }
+              // Одна цифра и двоеточие (напр. "1:") — очищаем поле
+              else if (/^\d:$/.test(t)) {
+                e.preventDefault();
+                setFormData((p) => ({ ...p, time: '' }));
+                const input = e.currentTarget;
+                setTimeout(() => input.setSelectionRange(0, 0), 0);
+              }
+            }}
             placeholder="--:--"
             className="min-w-0 flex-1 text-base md:text-sm font-mono tabular-nums"
           />
