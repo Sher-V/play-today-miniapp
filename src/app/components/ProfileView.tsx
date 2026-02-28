@@ -1,7 +1,9 @@
-import { ChevronLeft, ChevronRight, MapPin, Calendar, MessageCircle, Pencil, Users, UserPlus } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronLeft, ChevronRight, MapPin, Calendar, MessageCircle, Pencil, Users, UserPlus, Loader2 } from 'lucide-react';
 import Slider from 'react-slick';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
+import { Switch } from './ui/switch';
 import type { UserProfile } from '../../lib/types';
 
 interface ProfileViewProps {
@@ -10,6 +12,8 @@ interface ProfileViewProps {
   onEdit: () => void;
   /** При пустом профиле — переход на страницу регистрации тренера */
   onRegisterCoach?: () => void;
+  /** Смена видимости профиля в каталоге (hidden = скрыт) */
+  onVisibilityChange?: (hidden: boolean) => Promise<void>;
 }
 
 const MediaPrevArrow = (props: { onClick?: () => void } & Record<string, unknown>) => {
@@ -42,10 +46,22 @@ const MediaNextArrow = (props: { onClick?: () => void } & Record<string, unknown
   );
 };
 
-export function ProfileView({ profile, onBack, onEdit, onRegisterCoach }: ProfileViewProps) {
+export function ProfileView({ profile, onBack, onEdit, onRegisterCoach, onVisibilityChange }: ProfileViewProps) {
+  const [visibilityUpdating, setVisibilityUpdating] = useState(false);
   const hasCoachData = profile.isCoach || profile.coachName;
   const media = profile.coachMedia?.filter((m) => m.publicUrl) ?? [];
   const firstPhoto = media.find((m) => m.type === 'photo' && m.publicUrl)?.publicUrl;
+  const isHidden = !!profile.coachHidden;
+
+  const handleVisibilityChange = async (hidden: boolean) => {
+    if (!onVisibilityChange) return;
+    setVisibilityUpdating(true);
+    try {
+      await onVisibilityChange(hidden);
+    } finally {
+      setVisibilityUpdating(false);
+    }
+  };
 
   if (!hasCoachData) {
     return (
@@ -121,6 +137,29 @@ export function ProfileView({ profile, onBack, onEdit, onRegisterCoach }: Profil
         <div className="pt-14 px-5 pb-5">
           <h1 className="text-xl font-bold text-gray-900">{profile.coachName}</h1>
         </div>
+
+        {/* Статус активности профиля */}
+        {onVisibilityChange && (
+          <div className="mx-5 mb-4 flex items-center justify-between rounded-xl bg-gray-50 p-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                Статус профиля
+              </p>
+              <p className="mt-0.5 text-sm text-gray-700">
+                {isHidden ? 'Профиль скрыт из каталога' : 'Профиль виден в каталоге'}
+              </p>
+            </div>
+            {visibilityUpdating ? (
+              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+            ) : (
+              <Switch
+                checked={!isHidden}
+                onCheckedChange={(checked) => handleVisibilityChange(!checked)}
+                disabled={visibilityUpdating}
+              />
+            )}
+          </div>
+        )}
 
         {/* Контент */}
         <div className="px-5 pb-6 space-y-4">

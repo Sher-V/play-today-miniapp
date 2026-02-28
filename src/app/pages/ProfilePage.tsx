@@ -6,7 +6,7 @@ import { useTelegram } from '../../hooks/useTelegram';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { toast } from 'sonner';
 import type { CoachFormData } from '../components/CoachRegistrationFlow';
-import { saveCoachProfile, coachDistrictsLabelsToIds } from '../../lib/saveCoachProfile';
+import { saveCoachProfile, coachDistrictsLabelsToIds, updateCoachProfileVisibility } from '../../lib/saveCoachProfile';
 import { Loader2 } from 'lucide-react';
 
 export function ProfilePage() {
@@ -118,6 +118,11 @@ export function ProfilePage() {
       onBack={() => navigate('/')}
       onEdit={() => setIsEditMode(true)}
       onRegisterCoach={() => navigate('/register-coach')}
+      onVisibilityChange={
+        userId && (profile?.isCoach || profile?.coachName)
+          ? (hidden) => updateCoachProfileVisibility(userId, hidden)
+          : undefined
+      }
     />
   );
 }

@@ -1,4 +1,4 @@
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage, auth } from './firebase';
 import { ensureSignedIn } from './telegramAuth';
@@ -157,4 +157,21 @@ export async function saveCoachProfile(
     },
     { merge: true }
   );
+}
+
+/**
+ * Обновляет только статус видимости профиля тренера в каталоге.
+ */
+export async function updateCoachProfileVisibility(
+  userId: string,
+  hidden: boolean
+): Promise<void> {
+  await ensureSignedIn();
+  if (auth.currentUser?.uid !== userId) {
+    throw new Error(
+      `Ошибка авторизации: uid (${auth.currentUser?.uid ?? 'null'}) не совпадает с userId (${userId}). Откройте приложение заново в Telegram.`
+    );
+  }
+  const userRef = doc(db, 'users', userId);
+  await updateDoc(userRef, { coachHidden: hidden, updatedAt: new Date() });
 }
