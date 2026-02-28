@@ -88,6 +88,7 @@ export function GroupRegistrationFlow({
 
   const [submitting, setSubmitting] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
+  const [trainerInputFocused, setTrainerInputFocused] = useState(false);
 
   const isAdmin = formData.role === 'admin';
   const { trainings: allTrainings } = useGroupTrainings(isAdmin);
@@ -295,44 +296,52 @@ export function GroupRegistrationFlow({
           <div key="trainer" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
             <h3 className="font-semibold text-sm text-gray-900">Шаг 3</h3>
             <Label className="text-xs text-gray-600">Тренер группы</Label>
-            <Input
-              placeholder="Начните вводить имя тренера..."
-              value={formData.trainerSearchQuery ?? ''}
-              onChange={(e) =>
-                setFormData((p) => ({
-                  ...p,
-                  trainerSearchQuery: e.target.value,
-                  selectedTrainer: null,
-                }))
-              }
-              className="h-9 border-gray-300 bg-white focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20"
-            />
+            <div className="relative">
+              <Input
+                placeholder="Начните вводить имя или выберите из списка"
+                value={formData.trainerSearchQuery ?? ''}
+                onChange={(e) =>
+                  setFormData((p) => ({
+                    ...p,
+                    trainerSearchQuery: e.target.value,
+                    selectedTrainer: null,
+                  }))
+                }
+                onFocus={() => setTrainerInputFocused(true)}
+                onBlur={() => setTimeout(() => setTrainerInputFocused(false), 150)}
+                className="h-9 border-gray-300 bg-white focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20"
+              />
+              {trainerInputFocused && !formData.selectedTrainer && filteredTrainers.length > 0 && (
+                <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+                  {filteredTrainers.map((t) => (
+                    <li key={t.id}>
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-100"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setFormData((p) => ({
+                            ...p,
+                            selectedTrainer: t,
+                            trainerSearchQuery: t.coachName || t.trainerName,
+                          }));
+                          setTrainerInputFocused(false);
+                        }}
+                      >
+                        {t.coachName || t.trainerName}
+                        {t.contact && (
+                          <span className="text-gray-500 ml-1">— {t.contact}</span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             {formData.selectedTrainer && (
               <p className="text-xs text-green-600">
                 Отлично, данный тренер уже зарегистрирован
               </p>
-            )}
-            {filteredTrainers.length > 0 && !formData.selectedTrainer && (
-              <select
-                value=""
-                onChange={(e) => {
-                  const id = e.target.value;
-                  const t = filteredTrainers.find((x) => x.id === id);
-                  setFormData((p) => ({
-                    ...p,
-                    selectedTrainer: t ?? null,
-                    trainerSearchQuery: t ? (t.coachName || t.trainerName) : p.trainerSearchQuery,
-                  }));
-                }}
-                className="w-full h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              >
-                <option value="">Выберите тренера из списка</option>
-                {filteredTrainers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.coachName || t.trainerName} — {t.contact}
-                  </option>
-                ))}
-              </select>
             )}
             {filteredTrainers.length === 0 &&
               (trainerSearch.length > 0 || trainersAtCourt.length === 0) &&
