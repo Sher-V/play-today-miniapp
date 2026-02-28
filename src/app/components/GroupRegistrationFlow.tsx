@@ -334,8 +334,8 @@ export function GroupRegistrationFlow({
                 ))}
               </select>
             )}
-            {(trainerSearch.length >= 2 || trainersAtCourt.length === 0) &&
-              filteredTrainers.length === 0 &&
+            {filteredTrainers.length === 0 &&
+              (trainerSearch.length > 0 || trainersAtCourt.length === 0) &&
               onAddClubTrainerRequest && (
               <Button
                 type="button"
