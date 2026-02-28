@@ -245,7 +245,7 @@ export default function App() {
                 }}
                 aria-label="Открыть меню"
               >
-                <Menu className="h-8 w-8 text-gray-900" strokeWidth={2.5} />
+                <Menu className="size-8 text-gray-900" strokeWidth={2.5} />
               </Button>
               <SheetContent side="right" className="w-64">
                 <div className="flex flex-col gap-1 pt-4">
