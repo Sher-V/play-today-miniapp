@@ -543,7 +543,7 @@ export function CoachRegistrationFlow({ onBack, onSubmit, initialData, isEditMod
           onClick={handleSubmit}
           disabled={!allValid || submitting}
         >
-          {submitting ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Заполнить анкету'}
+          {submitting ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Готово'}
         </Button>
       </div>
     </div>

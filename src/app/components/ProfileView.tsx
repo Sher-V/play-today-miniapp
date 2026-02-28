@@ -71,7 +71,7 @@ export function ProfileView({ profile, onBack, onEdit }: ProfileViewProps) {
               size="lg"
             >
               <Pencil className="mr-2 h-4 w-4" />
-              Заполнить анкету
+              Готово
             </Button>
           </div>
         </div>
