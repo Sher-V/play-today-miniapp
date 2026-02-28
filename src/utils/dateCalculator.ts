@@ -38,87 +38,42 @@ export function formatDateTime(date: Date): string {
 }
 
 /**
- * Вычисляет ближайшую дату для повторяющегося занятия
- * @param originalDateTimeStr - исходная дата занятия в формате "02.03 19:00"
+ * Вычисляет ближайшую дату для повторяющегося занятия.
+ * Отсчёт идёт от первой даты тренировки (dateTime): показываем её или следующее занятие по той же неделе, но не раньше первой даты.
+ * @param originalDateTimeStr - первая дата занятия в формате "02.03 19:00"
  * @returns ближайшая дата в формате "ДД.ММ ЧЧ:ММ"
  */
 export function getNextRecurringDate(originalDateTimeStr: string): string {
-  const originalDate = parseDateTime(originalDateTimeStr);
-  
-  if (!originalDate) {
-    return originalDateTimeStr; // Возвращаем исходную строку, если не удалось распарсить
-  }
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Сбрасываем время для корректного сравнения
-  
-  // Получаем день недели исходного занятия (0 = воскресенье, 1 = понедельник, ...)
-  const targetDayOfWeek = originalDate.getDay();
-  
-  // Начинаем поиск с завтрашнего дня
-  const nextDate = new Date(today);
-  nextDate.setDate(nextDate.getDate() + 1);
-  
-  // Ищем ближайший день с нужным днём недели
-  let daysToAdd = 0;
-  const currentDayOfWeek = nextDate.getDay();
-  
-  if (currentDayOfWeek <= targetDayOfWeek) {
-    // Искомый день на этой неделе
-    daysToAdd = targetDayOfWeek - currentDayOfWeek;
-  } else {
-    // Искомый день на следующей неделе
-    daysToAdd = 7 - currentDayOfWeek + targetDayOfWeek;
-  }
-  
-  nextDate.setDate(nextDate.getDate() + daysToAdd);
-  
-  // Устанавливаем время из исходного занятия
-  nextDate.setHours(originalDate.getHours());
-  nextDate.setMinutes(originalDate.getMinutes());
-  
-  return formatDateTime(nextDate);
+  const firstDate = parseDateTime(originalDateTimeStr);
+  if (!firstDate) return originalDateTimeStr;
+
+  const now = new Date();
+  // Если первая дата ещё не наступила или сегодня — показываем её
+  if (firstDate.getTime() >= now.getTime()) return formatDateTime(firstDate);
+  // Иначе ищем следующее занятие: +1 неделя от первой даты, пока не >= now
+  const next = new Date(firstDate);
+  while (next.getTime() < now.getTime()) next.setDate(next.getDate() + 7);
+  return formatDateTime(next);
 }
 
 /**
- * Вычисляет две ближайшие даты для повторяющегося занятия
- * @param originalDateTimeStr - исходная дата занятия в формате "02.03 19:00"
+ * Вычисляет две ближайшие даты для повторяющегося занятия.
+ * Отсчёт от первой даты тренировки: не показываем дату раньше неё.
+ * @param originalDateTimeStr - первая дата занятия в формате "02.03 19:00"
  * @returns массив из двух ближайших дат в формате "ДД.ММ ЧЧ:ММ"
  */
 export function getNextTwoRecurringDates(originalDateTimeStr: string): [string, string] {
-  const originalDate = parseDateTime(originalDateTimeStr);
-  
-  if (!originalDate) {
-    return [originalDateTimeStr, originalDateTimeStr];
+  const firstOccurrence = parseDateTime(originalDateTimeStr);
+  if (!firstOccurrence) return [originalDateTimeStr, originalDateTimeStr];
+
+  const now = new Date();
+  let next = new Date(firstOccurrence);
+  if (next.getTime() < now.getTime()) {
+    while (next.getTime() < now.getTime()) next.setDate(next.getDate() + 7);
   }
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  const targetDayOfWeek = originalDate.getDay();
-  
-  // Первая дата - ближайшая
-  const firstDate = new Date(today);
-  firstDate.setDate(firstDate.getDate() + 1);
-  
-  let daysToAdd = 0;
-  const currentDayOfWeek = firstDate.getDay();
-  
-  if (currentDayOfWeek <= targetDayOfWeek) {
-    daysToAdd = targetDayOfWeek - currentDayOfWeek;
-  } else {
-    daysToAdd = 7 - currentDayOfWeek + targetDayOfWeek;
-  }
-  
-  firstDate.setDate(firstDate.getDate() + daysToAdd);
-  firstDate.setHours(originalDate.getHours());
-  firstDate.setMinutes(originalDate.getMinutes());
-  
-  // Вторая дата - через неделю после первой
-  const secondDate = new Date(firstDate);
-  secondDate.setDate(secondDate.getDate() + 7);
-  
-  return [formatDateTime(firstDate), formatDateTime(secondDate)];
+  const second = new Date(next);
+  second.setDate(second.getDate() + 7);
+  return [formatDateTime(next), formatDateTime(second)];
 }
 
 /**
