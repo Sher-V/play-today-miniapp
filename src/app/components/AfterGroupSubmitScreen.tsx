@@ -101,7 +101,7 @@ export function AfterGroupSubmitScreen({
             <AlertTriangle className="h-6 w-6 text-white" />
           </div>
           <p className="text-sm font-medium text-gray-900">
-            Зарегистрируйтесь как тренер — и группа появится в каталоге для игроков.
+            Пока группа <strong>пока не</strong> отображается игрокам — зарегистрируйте профиль тренера в сервисе Play Today, это займёт <strong>1 минуту</strong>.
           </p>
         </div>
       )}
@@ -269,7 +269,7 @@ export function AfterGroupSubmitScreen({
             </h2>
 
             <p className="text-sm text-gray-700 leading-relaxed">
-              Это займёт 1 минуту. Вы также по своему желанию сможете предлагать игрокам индивидуальные и сплит тренировки. Сейчас это для вас бесплатно.
+              Вы также по своему желанию сможете предлагать игрокам индивидуальные и сплит тренировки. Сейчас это бесплатно.
             </p>
 
             <Button
