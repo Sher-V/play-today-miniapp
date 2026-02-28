@@ -77,6 +77,8 @@ interface GroupRegistrationFlowProps {
   /** Только что созданный в шторке тренер — сразу подставляем в шаг 3 */
   newlyCreatedTrainer?: TrainerAtCourt | null;
   onClearNewlyCreatedTrainer?: () => void;
+  /** Контакт из профиля тренера — подставляется в группу при создании как тренер */
+  coachContactFromProfile?: string;
 }
 
 export function GroupRegistrationFlow({
@@ -87,6 +89,7 @@ export function GroupRegistrationFlow({
   onAddClubTrainerRequest,
   newlyCreatedTrainer,
   onClearNewlyCreatedTrainer,
+  coachContactFromProfile,
 }: GroupRegistrationFlowProps) {
   const [formData, setFormData] = useState<GroupFormData>(defaultFormData);
 
@@ -184,7 +187,9 @@ export function GroupRegistrationFlow({
       isAdminSubmit && sel
         ? (sel.coachName || sel.trainerName).trim()
         : telegramUserName || 'Тренер';
-    const contact = isAdminSubmit && sel ? sel.contact : (formData.role === 'coach' ? '' : formData.contact.trim());
+    const contact = isAdminSubmit && sel
+      ? sel.contact
+      : (formData.role === 'coach' ? (coachContactFromProfile ?? '').trim() : formData.contact.trim());
 
     setSubmitting(true);
     try {
@@ -406,8 +411,14 @@ export function GroupRegistrationFlow({
               const v = e.target.value.replace(/\D/g, '');
               if (v.length === 0) setFormData((p) => ({ ...p, time: '' }));
               else if (v.length === 1) setFormData((p) => ({ ...p, time: v }));
-              else if (v.length === 2) setFormData((p) => ({ ...p, time: `${v}:` }));
-              else setFormData((p) => ({ ...p, time: `${v.slice(0, 2)}:${v.slice(2, 4)}` }));
+              else if (v.length === 2) {
+                const h = Math.min(23, parseInt(v, 10) || 0);
+                setFormData((p) => ({ ...p, time: `${String(h).padStart(2, '0')}:` }));
+              } else {
+                const h = Math.min(23, parseInt(v.slice(0, 2), 10) || 0);
+                const m = Math.min(59, parseInt(v.slice(2, 4), 10) || 0);
+                setFormData((p) => ({ ...p, time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}` }));
+              }
             }}
             onKeyDown={(e) => {
               if (e.key !== 'Backspace') return;

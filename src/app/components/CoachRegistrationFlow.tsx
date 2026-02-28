@@ -60,6 +60,8 @@ interface CoachRegistrationFlowProps {
   isEditMode?: boolean;
   /** Telegram userId — нужен для загрузки фото/видео сразу после выбора */
   userId?: string;
+  /** ID группы, созданной до регистрации — контакт будет подставлен в группу после сохранения */
+  fromGroupId?: string;
 }
 
 export function CoachRegistrationFlow({
@@ -68,6 +70,7 @@ export function CoachRegistrationFlow({
   initialData,
   isEditMode,
   userId,
+  fromGroupId,
 }: CoachRegistrationFlowProps) {
   const initialForm = initialData
     ? {
@@ -347,6 +350,9 @@ export function CoachRegistrationFlow({
           <p className="text-xs text-gray-500">{formData.about.length} / 800</p>
           <div className="space-y-1">
             <Label className="text-xs text-gray-600">Контакт для связи (Telegram или телефон)</Label>
+            {fromGroupId && (
+              <p className="text-xs text-blue-600">Укажите контакт — он будет подставлен в созданную группу для записи игроков.</p>
+            )}
             <Input
               placeholder="@username или +7 999 123-45-67"
               value={formData.coachContact ?? ''}

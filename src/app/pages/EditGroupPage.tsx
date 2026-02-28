@@ -42,6 +42,14 @@ interface SelectedTrainer {
   userId?: number;
 }
 
+/** Нормализует время "HH:mm": часы 0–23, минуты 0–59 */
+function normalizeTime(timeStr: string): string {
+  const [h, m] = timeStr.split(':').map((s) => parseInt(s, 10) || 0);
+  const hh = Math.min(23, Math.max(0, h));
+  const mm = Math.min(59, Math.max(0, m));
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
 /** Парсит dateTime "DD.MM HH:mm" в дату и время */
 function parseDateTime(dateTime: string): { date: Date; time: string } {
   const [datePart, timePart] = dateTime.split(' ');
@@ -130,7 +138,7 @@ export function EditGroupPage() {
         setCourtName(t.courtName);
         const { date: d, time: tm } = parseDateTime(t.dateTime);
         setDate(d);
-        setTime(tm);
+        setTime(normalizeTime(tm));
         setIsRecurring(t.isRecurring ?? true);
         setDuration(t.duration);
         setGroupSize(t.groupSize ?? '3-4');
@@ -381,8 +389,14 @@ export function EditGroupPage() {
               const v = e.target.value.replace(/\D/g, '');
               if (v.length === 0) setTime('');
               else if (v.length === 1) setTime(v);
-              else if (v.length === 2) setTime(`${v}:`);
-              else setTime(`${v.slice(0, 2)}:${v.slice(2, 4)}`);
+              else if (v.length === 2) {
+                const h = Math.min(23, parseInt(v, 10) || 0);
+                setTime(`${String(h).padStart(2, '0')}:`);
+              } else {
+                const h = Math.min(23, parseInt(v.slice(0, 2), 10) || 0);
+                const m = Math.min(59, parseInt(v.slice(2, 4), 10) || 0);
+                setTime(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+              }
             }}
             onKeyDown={(e) => {
               if (e.key !== 'Backspace') return;

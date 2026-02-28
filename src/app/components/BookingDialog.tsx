@@ -26,6 +26,9 @@ export function BookingDialog({
   onContactMe,
   isContactSending = false,
 }: BookingDialogProps) {
+  const hasContact = trainerContact.trim().length > 0;
+  const displayName = trainerName.trim() || 'Тренер';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md rounded-2xl">
@@ -39,7 +42,7 @@ export function BookingDialog({
         <div className="space-y-6 py-4">
           <div className="text-center space-y-2">
             <p className="text-gray-700">
-              Вы можете связаться с тренером <span className="font-semibold">{trainerName}</span> напрямую
+              Вы можете связаться с тренером <span className="font-semibold">{displayName}</span> напрямую
             </p>
           </div>
 
@@ -53,20 +56,22 @@ export function BookingDialog({
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-gray-600">Контакт тренера</p>
                   <p className="font-semibold text-blue-700 truncate">
-                    {trainerContact}
+                    {hasContact ? trainerContact : 'Не указан'}
                   </p>
                 </div>
               </div>
-              <Button
-                onClick={() => {
-                  navigator.clipboard.writeText(trainerContact);
-                  toast.success('Контакт скопирован');
-                }}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg flex items-center justify-center flex-shrink-0"
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
+              {hasContact && (
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(trainerContact);
+                    toast.success('Контакт скопирован');
+                  }}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
 
@@ -81,9 +86,14 @@ export function BookingDialog({
 
           {/* Кнопка связаться со мной */}
           <div className="space-y-3">
+            {!hasContact && (
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                У этой группы не указан контакт тренера. Заявку отправить нельзя — обратитесь к организатору или выберите другую тренировку.
+              </p>
+            )}
             <Button
               onClick={onContactMe}
-              disabled={isContactSending}
+              disabled={isContactSending || !hasContact}
               className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-base font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-70"
             >
               {isContactSending ? (

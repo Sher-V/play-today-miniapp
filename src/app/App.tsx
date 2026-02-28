@@ -163,9 +163,19 @@ export default function App() {
 
   const handleContactMe = async () => {
     if (!selectedTrainer) return;
-    if (!telegramUser?.id) {
+    const rawTelegramId = telegramUser?.id;
+    if (rawTelegramId == null || rawTelegramId === 0) {
       toast.error('Не удалось определить ваш Telegram', {
         description: 'Откройте приложение через бота в Telegram',
+      });
+      return;
+    }
+
+    const trainerName = (selectedTrainer.name || selectedGroup?.trainer || 'Тренер').trim();
+    const trainerContact = (selectedTrainer.contact || '').trim();
+    if (!trainerContact) {
+      toast.error('Нельзя отправить заявку', {
+        description: 'У этой группы не указан контакт тренера. Обратитесь к организатору или выберите другую тренировку.',
       });
       return;
     }
@@ -173,26 +183,28 @@ export default function App() {
     setIsContactSending(true);
     hapticFeedback('medium');
 
+    const payload = {
+      telegramId: Number(rawTelegramId),
+      trainerName: trainerName || 'Тренер',
+      trainerContact,
+      training: selectedGroup
+        ? {
+            location: selectedGroup.location,
+            date: selectedGroup.date,
+            time: selectedGroup.time,
+            level: selectedGroup.level,
+            dayOfWeek: selectedGroup.dayOfWeek,
+            groupSize: selectedGroup.groupSize,
+            price: selectedGroup.price,
+          }
+        : null,
+      trainerTelegramId: selectedGroup?.trainerUserId,
+      pupilFirstName: telegramUser?.first_name ?? undefined,
+      pupilUsername: telegramUser?.username ?? undefined,
+    };
+
     try {
-      await sendContactRequest({
-        telegramId: telegramUser.id,
-        trainerName: selectedTrainer.name,
-        trainerContact: selectedTrainer.contact,
-        training: selectedGroup
-          ? {
-              location: selectedGroup.location,
-              date: selectedGroup.date,
-              time: selectedGroup.time,
-              level: selectedGroup.level,
-              dayOfWeek: selectedGroup.dayOfWeek,
-              groupSize: selectedGroup.groupSize,
-              price: selectedGroup.price,
-            }
-          : null,
-        trainerTelegramId: selectedGroup?.trainerUserId,
-        pupilFirstName: telegramUser.first_name,
-        pupilUsername: telegramUser.username,
-      });
+      await sendContactRequest(payload);
       hapticFeedback('success');
       toast.success('Заявка отправлена!', {
         description: 'Вам пришло сообщение в Telegram. Тренер свяжется с вами в ближайшее время.',
@@ -200,8 +212,12 @@ export default function App() {
       setIsBookingDialogOpen(false);
     } catch (e) {
       hapticFeedback('error');
+      const message = e instanceof Error ? e.message : String(e);
+      const isMissingFields = /missing required fields|telegramId|trainerName|trainerContact/i.test(message);
       toast.error('Не удалось отправить заявку', {
-        description: e instanceof Error ? e.message : 'Попробуйте позже',
+        description: isMissingFields
+          ? 'У этой группы не заполнены данные тренера для записи. Выберите другую тренировку или попробуйте позже.'
+          : message,
       });
     } finally {
       setIsContactSending(false);

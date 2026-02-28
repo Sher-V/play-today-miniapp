@@ -5,6 +5,7 @@ import { AfterGroupSubmitScreen } from '../components/AfterGroupSubmitScreen';
 import { AddClubTrainerForm, type NewlyCreatedClubTrainer } from '../components/AddClubTrainerForm';
 import { Sheet, SheetContent } from '../components/ui/sheet';
 import { useTelegram } from '../../hooks/useTelegram';
+import { useUserProfile } from '../../hooks/useUserProfile';
 import type { GroupCreatorRole } from '../../lib/groupRegistrationStorage';
 
 function toTrainerAtCourt(t: NewlyCreatedClubTrainer): TrainerAtCourt {
@@ -22,6 +23,8 @@ function toTrainerAtCourt(t: NewlyCreatedClubTrainer): TrainerAtCourt {
 export function AddGroupPage() {
   const navigate = useNavigate();
   const { user: telegramUser } = useTelegram();
+  const userIdStr = telegramUser?.id != null ? String(telegramUser.id) : undefined;
+  const { profile } = useUserProfile(userIdStr);
   const [afterSubmitRole, setAfterSubmitRole] = useState<GroupCreatorRole | null>(null);
   const [afterSubmitGroupId, setAfterSubmitGroupId] = useState<string | null>(null);
   const [trainerWasExisting, setTrainerWasExisting] = useState(false);
@@ -42,7 +45,11 @@ export function AddGroupPage() {
         telegramUserId={telegramUser?.id}
         trainerWasExisting={trainerWasExisting}
         onBack={() => navigate('/my-groups')}
-        onRegisterCoach={() => navigate('/register-coach')}
+        onRegisterCoach={() => {
+          const gid = afterSubmitGroupId ?? undefined;
+          const path = gid ? `/register-coach?fromGroupId=${encodeURIComponent(gid)}` : '/register-coach';
+          navigate(path, { state: gid ? { fromGroupId: gid } : undefined });
+        }}
         onAddAnotherGroup={() => {
           setScreen('form');
           setAfterSubmitRole(null);
@@ -58,6 +65,7 @@ export function AddGroupPage() {
       <GroupRegistrationFlow
         telegramUserId={telegramUser?.id}
         telegramUserName={telegramUserName}
+        coachContactFromProfile={profile?.coachContact}
         onSuccess={(role, groupId, opts) => {
           setAfterSubmitRole(role);
           setAfterSubmitGroupId(groupId);
