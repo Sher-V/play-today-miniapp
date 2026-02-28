@@ -274,7 +274,7 @@ export function EditGroupPage() {
     groupSize === '3-4' || groupSize === '5-6',
     !!level,
     /^\d+$/.test(priceSingle),
-    contact.trim().length > 0,
+    ...(isClubAdmin ? [contact.trim().length > 0] : []),
   ];
 
   const stepBlocks = [
@@ -517,17 +517,21 @@ export function EditGroupPage() {
         className="h-9"
       />
     </div>,
-    /* Шаг 8 */
-    <div key="8" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">Шаг 8</h3>
-      <Label className="text-xs text-gray-600">Ваши контакты</Label>
-      <Input
-        placeholder="Телефон или @username"
-        value={contact}
-        onChange={(e) => setContact(e.target.value)}
-        className="h-9"
-      />
-    </div>,
+    /* Шаг 8 — контакты только для админа */
+    ...(isClubAdmin
+      ? [
+          <div key="8" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
+            <h3 className="font-semibold text-sm text-gray-900">Шаг 8</h3>
+            <Label className="text-xs text-gray-600">Ваши контакты</Label>
+            <Input
+              placeholder="Телефон или @username"
+              value={contact}
+              onChange={(e) => setContact(e.target.value)}
+              className="h-9"
+            />
+          </div>,
+        ]
+      : []),
   ];
 
   return (
