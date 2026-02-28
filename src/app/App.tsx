@@ -11,12 +11,7 @@ import { RegisterCoachPage } from './pages/RegisterCoachPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { Users, Loader2, Menu, List, LayoutGrid } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from './components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet';
 import { Button } from './components/ui/button';
 import { toast, Toaster } from 'sonner';
 import { useMyGroupTrainings } from '../hooks/useMyGroupTrainings';
@@ -76,6 +71,7 @@ export default function App() {
   const [selectedGroup, setSelectedGroup] = useState<TennisGroup | null>(null);
   const [isTrainerDrawerOpen, setIsTrainerDrawerOpen] = useState(false);
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Подсчет активных фильтров
   const activeFiltersCount = useMemo(() => {
@@ -232,32 +228,62 @@ export default function App() {
               </p>
             </div>
             {/* Меню-бургер */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="shrink-0">
+            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+              <SheetTrigger asChild>
+                <Button type="button" variant="ghost" size="icon" className="shrink-0">
                   <Menu className="h-6 w-6 text-gray-700" />
                   <span className="sr-only">Меню</span>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => navigate('/my-groups')}>
-                  <List className="mr-2 h-4 w-4" />
-                  Мои тренировки
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/')}>
-                  <LayoutGrid className="mr-2 h-4 w-4" />
-                  Все тренировки
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/register-coach')}>
-                  <Users className="mr-2 h-4 w-4" />
-                  Регистрация тренера
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
-                  <Users className="mr-2 h-4 w-4" />
-                  Мой профиль
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-64">
+                <div className="flex flex-col gap-1 pt-4">
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate('/my-groups');
+                    }}
+                  >
+                    <List className="h-5 w-5 text-blue-600" />
+                    Мои тренировки
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate('/');
+                    }}
+                  >
+                    <LayoutGrid className="h-5 w-5 text-blue-600" />
+                    Все тренировки
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate('/register-coach');
+                    }}
+                  >
+                    <Users className="h-5 w-5 text-blue-600" />
+                    Регистрация тренера
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate('/profile');
+                    }}
+                  >
+                    <Users className="h-5 w-5 text-blue-600" />
+                    Мой профиль
+                  </button>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </header>
