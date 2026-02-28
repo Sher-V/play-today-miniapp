@@ -14,6 +14,10 @@ const DISTRICT_IDS_TO_LABELS: Record<string, string> = {
   suburb: 'Подмосковье',
 };
 
+const DISTRICT_LABELS_TO_IDS: Record<string, string> = Object.fromEntries(
+  Object.entries(DISTRICT_IDS_TO_LABELS).map(([id, label]) => [label, id])
+);
+
 async function uploadFileToGCS(userId: string, file: File, type: 'photo' | 'video'): Promise<string> {
   const ext = file.name.split('.').pop() || (type === 'photo' ? 'jpg' : 'mp4');
   const path = `coach-media/${userId}/${Date.now()}_${type}.${ext}`;
@@ -41,16 +45,24 @@ async function buildCoachMedia(
   return items;
 }
 
+/** Обратное преобразование: label → id */
+export function coachDistrictsLabelsToIds(labels: string[]): string[] {
+  return labels
+    .map((l) => DISTRICT_LABELS_TO_IDS[l] ?? l)
+    .filter((id) => Object.hasOwn(DISTRICT_IDS_TO_LABELS, id));
+}
+
 /**
  * Сохраняет профиль тренера в коллекцию users.
  * Фото и видео загружаются в Google Cloud Storage (Firebase Storage).
+ * При редактировании: existingCoachMedia объединяется с новыми загрузками.
  * Требуется: Firebase Auth с uid === userId (например, кастомный токен по Telegram ID).
- * Иначе правила безопасности отклонят запись.
  */
 export async function saveCoachProfile(
   userId: string,
   coachName: string,
-  data: CoachFormData
+  data: CoachFormData,
+  opts?: { existingCoachMedia?: CoachMediaItem[] }
 ): Promise<void> {
   await ensureSignedIn();
   if (auth.currentUser?.uid !== userId) {
@@ -61,13 +73,18 @@ export async function saveCoachProfile(
 
   const districtLabels = data.districts.map((id) => DISTRICT_IDS_TO_LABELS[id] || id);
 
-  let coachMedia: CoachMediaItem[] | undefined;
-  if ((data.photoFiles?.length ?? 0) > 0 || data.videoFile) {
-    coachMedia = await buildCoachMedia(
+  let coachMedia: CoachMediaItem[];
+  const hasNewMedia = (data.photoFiles?.length ?? 0) > 0 || data.videoFile;
+  const keptExisting = opts?.existingCoachMedia ?? [];
+  if (hasNewMedia) {
+    const newMedia = await buildCoachMedia(
       userId,
       data.photoFiles ?? [],
       data.videoFile ?? null
     );
+    coachMedia = [...keptExisting, ...newMedia];
+  } else {
+    coachMedia = keptExisting;
   }
 
   await setDoc(
@@ -81,7 +98,8 @@ export async function saveCoachProfile(
       coachPriceGroup: parseInt(data.priceGroup, 10) || 0,
       coachAvailableDays: data.availableDays,
       coachAbout: data.about.slice(0, 800),
-      ...(coachMedia && coachMedia.length > 0 ? { coachMedia } : {}),
+      ...(data.coachContact !== undefined && { coachContact: data.coachContact.trim() }),
+      coachMedia: coachMedia,
       updatedAt: new Date(),
     },
     { merge: true }

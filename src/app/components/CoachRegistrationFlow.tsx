@@ -25,10 +25,14 @@ export interface CoachFormData {
   priceGroup: string;
   availableDays: string[];
   about: string;
+  /** Контакт (ник или телефон) */
+  coachContact?: string;
   /** Файлы фото для загрузки в GCS */
   photoFiles?: File[];
   /** Файл видео для загрузки в GCS */
   videoFile?: File | null;
+  /** Существующие медиа (при редактировании), которые сохраняем */
+  existingCoachMedia?: import('../../lib/types').CoachMediaItem[];
 }
 
 const defaultCoachForm: CoachFormData = {
@@ -39,18 +43,43 @@ const defaultCoachForm: CoachFormData = {
   priceGroup: '',
   availableDays: [],
   about: '',
+  coachContact: '',
 };
 
 interface CoachRegistrationFlowProps {
   onBack: () => void;
   onSubmit: (data: CoachFormData) => void | Promise<void>;
+  /** Начальные данные для режима редактирования */
+  initialData?: Partial<CoachFormData> & {
+    existingCoachMedia?: import('../../lib/types').CoachMediaItem[];
+  };
+  /** Текст заголовка и кнопки в режиме редактирования */
+  isEditMode?: boolean;
 }
 
-export function CoachRegistrationFlow({ onBack, onSubmit }: CoachRegistrationFlowProps) {
-  const [formData, setFormData] = useState<CoachFormData>(defaultCoachForm);
+export function CoachRegistrationFlow({ onBack, onSubmit, initialData, isEditMode }: CoachRegistrationFlowProps) {
+  const initialForm = initialData
+    ? {
+        name: initialData.name ?? '',
+        districts: initialData.districts ?? [],
+        priceIndividual: initialData.priceIndividual ?? '',
+        priceSplit: initialData.priceSplit ?? '',
+        priceGroup: initialData.priceGroup ?? '',
+        availableDays: initialData.availableDays ?? [],
+        about: initialData.about ?? '',
+        coachContact: initialData.coachContact ?? '',
+      }
+    : defaultCoachForm;
+
+  const [formData, setFormData] = useState<CoachFormData>({ ...defaultCoachForm, ...initialForm });
   const [submitting, setSubmitting] = useState(false);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [keptExistingUrls, setKeptExistingUrls] = useState<Set<string>>(() => {
+    const urls = new Set<string>();
+    initialData?.existingCoachMedia?.forEach((m) => m.publicUrl && urls.add(m.publicUrl));
+    return urls;
+  });
   const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -88,10 +117,16 @@ export function CoachRegistrationFlow({ onBack, onSubmit }: CoachRegistrationFlo
     if (!allValid) return;
     setSubmitting(true);
     try {
+      const keptExisting =
+        initialData?.existingCoachMedia?.filter(
+          (m) => m.publicUrl && keptExistingUrls.has(m.publicUrl)
+        ) ?? [];
       await onSubmit({
         ...formData,
+        coachContact: formData.coachContact?.trim() || undefined,
         photoFiles: photoFiles.length > 0 ? photoFiles : undefined,
         videoFile: videoFile ?? undefined,
+        existingCoachMedia: keptExisting.length > 0 ? keptExisting : undefined,
       });
     } finally {
       setSubmitting(false);
@@ -252,7 +287,7 @@ export function CoachRegistrationFlow({ onBack, onSubmit }: CoachRegistrationFlo
       question: 'Пара строк о вас',
       hint: 'Кого тренируете, на чём фокус, опыт/разряд. Максимум 800 символов',
       content: (
-        <div className="space-y-1">
+        <div className="space-y-3">
           <Textarea
             placeholder="Расскажите о себе..."
             value={formData.about}
@@ -261,6 +296,15 @@ export function CoachRegistrationFlow({ onBack, onSubmit }: CoachRegistrationFlo
             className="resize-none"
           />
           <p className="text-xs text-gray-500">{formData.about.length} / 800</p>
+          <div className="space-y-1">
+            <Label className="text-xs text-gray-600">Контакт для связи (Telegram или телефон)</Label>
+            <Input
+              placeholder="@username или +7 999 123-45-67"
+              value={formData.coachContact ?? ''}
+              onChange={(e) => setFormData((p) => ({ ...p, coachContact: e.target.value }))}
+              className="h-9"
+            />
+          </div>
         </div>
       ),
       canProceed: canStep7,
@@ -289,11 +333,57 @@ export function CoachRegistrationFlow({ onBack, onSubmit }: CoachRegistrationFlo
             </div>
           </div>
 
+          {/* Существующие медиа (режим редактирования) */}
+          {isEditMode && initialData?.existingCoachMedia && initialData.existingCoachMedia.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-900">Текущие фото и видео</Label>
+              <div className="flex flex-wrap gap-2">
+                {initialData.existingCoachMedia.map((m) => {
+                  if (!m.publicUrl || !keptExistingUrls.has(m.publicUrl)) return null;
+                  return (
+                    <div key={m.publicUrl} className="relative">
+                      {m.type === 'photo' ? (
+                        <img
+                          src={m.publicUrl}
+                          alt=""
+                          className="h-20 w-20 rounded-lg border border-gray-200 object-cover"
+                        />
+                      ) : (
+                        <video
+                          src={m.publicUrl}
+                          className="h-20 w-20 rounded-lg border border-gray-200 object-cover"
+                          muted
+                          playsInline
+                        />
+                      )}
+                      <button
+                        type="button"
+                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600"
+                        onClick={() =>
+                          setKeptExistingUrls((prev) => {
+                            const next = new Set(prev);
+                            next.delete(m.publicUrl!);
+                            return next;
+                          })
+                        }
+                        title="Удалить"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Фотографии */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Image className="h-4 w-4 text-blue-600" />
-              <Label className="text-sm font-medium text-gray-900">Фотографии</Label>
+              <Label className="text-sm font-medium text-gray-900">
+                {isEditMode ? 'Добавить фото' : 'Фотографии'}
+              </Label>
             </div>
             <input
               ref={photoInputRef}
@@ -399,10 +489,13 @@ export function CoachRegistrationFlow({ onBack, onSubmit }: CoachRegistrationFlo
           <ChevronLeft className="w-4 h-4" />
           Назад
         </Button>
-        <h2 className="font-semibold text-gray-900">Регистрация тренера</h2>
+        <h2 className="font-semibold text-gray-900">
+          {isEditMode ? 'Редактирование профиля' : 'Регистрация тренера'}
+        </h2>
       </div>
 
-      {/* Intro block */}
+      {/* Intro block — только при регистрации */}
+      {!isEditMode && (
       <div className="bg-white rounded-lg shadow-sm border p-4 space-y-2">
         <h3 className="font-semibold text-gray-900">
           Зарегистрируйтесь в Play Today — сейчас это бесплатно.
@@ -418,6 +511,7 @@ export function CoachRegistrationFlow({ onBack, onSubmit }: CoachRegistrationFlo
           ✅ Заполните короткую анкету (≈2 минуты), и мы добавим вас в каталог тренеров.
         </p>
       </div>
+      )}
 
       <div className="space-y-3">
         {steps.map((step, index) => (
@@ -449,7 +543,7 @@ export function CoachRegistrationFlow({ onBack, onSubmit }: CoachRegistrationFlo
           onClick={handleSubmit}
           disabled={!allValid || submitting}
         >
-          {submitting ? 'Сохранение...' : 'Заполнить анкету'}
+          {submitting ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Заполнить анкету'}
         </Button>
       </div>
     </div>
