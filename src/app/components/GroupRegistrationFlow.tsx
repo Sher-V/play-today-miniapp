@@ -69,7 +69,8 @@ export function GroupRegistrationFlow({
 
   const canProceedStep0 = formData.role != null;
   const canProceedStep1 = formData.courtName.trim().length > 0;
-  const canProceedStep2 = formData.date != null && formData.time.length > 0;
+  const isValidTime = /^\d{2}:\d{2}$/.test(formData.time);
+  const canProceedStep2 = formData.date != null && isValidTime;
   const canProceedStep3 = formData.isRecurring !== null;
   const canProceedStep4 = formData.duration > 0;
   const canProceedStep5 = formData.groupSize === '3-4' || formData.groupSize === '5-6';
@@ -211,13 +212,21 @@ export function GroupRegistrationFlow({
             </div>
           )}
         </div>
-        <div className="relative flex h-9 max-w-[8rem] items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1 outline-none transition-[color,box-shadow] focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 [&_input]:h-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:p-0 [&_input]:outline-none [&_input]:focus-visible:ring-0 [&_input::-webkit-calendar-picker-indicator]:absolute [&_input::-webkit-calendar-picker-indicator]:inset-0 [&_input::-webkit-calendar-picker-indicator]:cursor-pointer [&_input::-webkit-calendar-picker-indicator]:opacity-0">
+        <div className="relative flex h-9 max-w-[8rem] items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1 outline-none transition-[color,box-shadow] focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 [&_input]:h-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:p-0 [&_input]:outline-none [&_input]:focus-visible:ring-0">
           <Clock className="h-4 w-4 shrink-0" />
           <Input
-            type="time"
+            type="text"
+            inputMode="numeric"
             value={formData.time}
-            onChange={(e) => setFormData((p) => ({ ...p, time: e.target.value }))}
-            className="min-w-0 flex-1 text-base md:text-sm"
+            onChange={(e) => {
+              const v = e.target.value.replace(/\D/g, '');
+              if (v.length <= 2) setFormData((p) => ({ ...p, time: v }));
+              else if (v.length <= 4)
+                setFormData((p) => ({ ...p, time: `${v.slice(0, 2)}:${v.slice(2, 4)}` }));
+              else setFormData((p) => ({ ...p, time: `${v.slice(0, 2)}:${v.slice(2, 4)}` }));
+            }}
+            placeholder="--:--"
+            className="min-w-0 flex-1 text-base md:text-sm font-mono tabular-nums"
           />
         </div>
       </div>

@@ -1,4 +1,5 @@
-import { ChevronLeft, MapPin, Calendar, MessageCircle, Pencil, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Calendar, MessageCircle, Pencil, Users } from 'lucide-react';
+import Slider from 'react-slick';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import type { UserProfile } from '../../lib/types';
@@ -8,6 +9,36 @@ interface ProfileViewProps {
   onBack: () => void;
   onEdit: () => void;
 }
+
+const MediaPrevArrow = (props: { onClick?: () => void } & Record<string, unknown>) => {
+  const { onClick, ...rest } = props;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-gray-800 hover:bg-black/30 transition-colors"
+      aria-label="Назад"
+      {...rest}
+    >
+      <ChevronLeft className="h-5 w-5" />
+    </button>
+  );
+};
+
+const MediaNextArrow = (props: { onClick?: () => void } & Record<string, unknown>) => {
+  const { onClick, ...rest } = props;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-gray-800 hover:bg-black/30 transition-colors"
+      aria-label="Вперёд"
+      {...rest}
+    >
+      <ChevronRight className="h-5 w-5" />
+    </button>
+  );
+};
 
 export function ProfileView({ profile, onBack, onEdit }: ProfileViewProps) {
   const hasCoachData = profile.isCoach || profile.coachName;
@@ -91,32 +122,45 @@ export function ProfileView({ profile, onBack, onEdit }: ProfileViewProps) {
 
         {/* Контент */}
         <div className="px-5 pb-6 space-y-4">
-          {/* Галерея */}
-          {media.length > 1 && (
-            <div className="overflow-hidden rounded-xl bg-gray-50">
+          {/* Слайдер фото и видео */}
+          {media.length > 0 && (
+            <div className="overflow-hidden rounded-xl bg-gray-100">
               <p className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500">
                 Фото и видео
               </p>
-              <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5">
+              <Slider
+                dots
+                infinite={media.length > 1}
+                speed={300}
+                slidesToShow={1}
+                slidesToScroll={1}
+                arrows={media.length > 1}
+                prevArrow={<MediaPrevArrow />}
+                nextArrow={<MediaNextArrow />}
+                className="media-slider relative"
+              >
                 {media.map((m) =>
                   m.type === 'photo' && m.publicUrl ? (
-                    <img
-                      key={m.publicUrl}
-                      src={m.publicUrl}
-                      alt=""
-                      className="h-28 w-28 shrink-0 rounded-lg object-cover"
-                    />
+                    <div key={m.publicUrl}>
+                      <img
+                        src={m.publicUrl}
+                        alt=""
+                        className="w-full h-56 object-cover rounded-lg"
+                      />
+                    </div>
                   ) : m.type === 'video' && m.publicUrl ? (
-                    <video
-                      key={m.publicUrl}
-                      src={m.publicUrl}
-                      className="h-28 w-28 shrink-0 rounded-lg object-cover"
-                      muted
-                      playsInline
-                    />
+                    <div key={m.publicUrl}>
+                      <video
+                        src={m.publicUrl}
+                        className="w-full h-56 object-cover rounded-lg"
+                        muted
+                        playsInline
+                        controls
+                      />
+                    </div>
                   ) : null
                 )}
-              </div>
+              </Slider>
             </div>
           )}
 
