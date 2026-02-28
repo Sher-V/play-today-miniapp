@@ -22,7 +22,7 @@ export interface GroupTraining {
 // Медиа-файл тренера (фото или видео)
 export interface CoachMediaItem {
   type: 'photo' | 'video';
-  fileId: string;           // Telegram file_id для использования в боте
+  fileId?: string;           // Telegram file_id для использования в боте (опционально)
   publicUrl?: string;        // URL в GCS для веб/мобильного приложения
   uploadedAt: string;        // ISO дата загрузки
 }

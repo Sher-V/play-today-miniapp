@@ -25,6 +25,10 @@ export interface CoachFormData {
   priceGroup: string;
   availableDays: string[];
   about: string;
+  /** Файлы фото для загрузки в GCS */
+  photoFiles?: File[];
+  /** Файл видео для загрузки в GCS */
+  videoFile?: File | null;
 }
 
 const defaultCoachForm: CoachFormData = {
@@ -39,7 +43,7 @@ const defaultCoachForm: CoachFormData = {
 
 interface CoachRegistrationFlowProps {
   onBack: () => void;
-  onSubmit: (data: CoachFormData) => void;
+  onSubmit: (data: CoachFormData) => void | Promise<void>;
 }
 
 export function CoachRegistrationFlow({ onBack, onSubmit }: CoachRegistrationFlowProps) {
@@ -80,11 +84,18 @@ export function CoachRegistrationFlow({ onBack, onSubmit }: CoachRegistrationFlo
   const unlockedUntil = stepChecks.findIndex((ok) => !ok);
   const allValid = unlockedUntil === -1 && canStep1 && canStep2 && canStep3 && canStep4 && canStep5 && canStep6 && canStep7;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!allValid) return;
     setSubmitting(true);
-    onSubmit(formData);
-    setSubmitting(false);
+    try {
+      await onSubmit({
+        ...formData,
+        photoFiles: photoFiles.length > 0 ? photoFiles : undefined,
+        videoFile: videoFile ?? undefined,
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const steps = [

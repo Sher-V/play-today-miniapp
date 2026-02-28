@@ -96,3 +96,41 @@ export function createFallbackTrainerInfo(
     contact,
   };
 }
+
+/**
+ * Получает TrainerInfo для шторки при клике на группу.
+ * Приоритет медиа: 1) coachMedia из профиля (users), 2) coachPhotoUrl из тренировки.
+ */
+export function getTrainerInfoForGroup(
+  trainerName: string,
+  contact: string,
+  trainersMap: Map<string, TrainerInfo>,
+  training: { userId?: number; coachPhotoUrl?: string; coachAbout?: string } | undefined
+): TrainerInfo {
+  // 1. Пробуем взять из профиля тренера (coachMedia)
+  if (training?.userId != null) {
+    const profileTrainer = trainersMap.get(String(training.userId));
+    if (profileTrainer && (profileTrainer.media?.length || profileTrainer.photo)) {
+      return {
+        ...profileTrainer,
+        contact,
+        ...(training.coachAbout && { description: training.coachAbout }),
+      };
+    }
+  }
+
+  // 2. Fallback на coachPhotoUrl из тренировки
+  if (training?.coachPhotoUrl) {
+    return {
+      id: 'fallback-' + trainerName.toLowerCase().replace(/\s+/g, '-'),
+      name: trainerName,
+      description: training.coachAbout || 'Профессиональный тренер по теннису',
+      contact,
+      media: [{ type: 'image', url: training.coachPhotoUrl }],
+      photo: training.coachPhotoUrl,
+    };
+  }
+
+  // 3. Базовый fallback без фото
+  return createFallbackTrainerInfo(trainerName, contact);
+}

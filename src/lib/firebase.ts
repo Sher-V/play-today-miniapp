@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -14,3 +15,6 @@ const app = initializeApp(firebaseConfig);
 
 // Инициализация Firestore
 export const db = getFirestore(app);
+
+// Инициализация Firebase Storage (Google Cloud Storage)
+export const storage = getStorage(app);

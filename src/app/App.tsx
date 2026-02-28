@@ -11,8 +11,9 @@ import { Users, Loader2 } from 'lucide-react';
 import { Link } from 'react-router';
 import { toast, Toaster } from 'sonner';
 import { useMyGroupTrainings } from '../hooks/useMyGroupTrainings';
+import { useTrainers } from '../hooks/useTrainers';
 import { mapTrainingToGroup } from '../utils/trainingMapper';
-import { createFallbackTrainerInfo } from '../utils/trainerMapper';
+import { getTrainerInfoForGroup, createTrainersMap } from '../utils/trainerMapper';
 import { parseGroupDateTime, isPastDateTime } from '../utils/dateCalculator';
 import { useTelegram } from '../hooks/useTelegram';
 import { sendContactRequest } from '../lib/sendContactRequest';
@@ -34,6 +35,8 @@ export default function App() {
 
   // На главной показываем только группы текущего пользователя (по telegram user id)
   const { trainings, loading, error } = useMyGroupTrainings(isListPage ? telegramUser?.id : undefined);
+  const { trainers } = useTrainers(isListPage);
+  const trainersMap = useMemo(() => createTrainersMap(trainers), [trainers]);
 
   const [filters, setFilters] = useState<FilterState>({
     timeOfDay: [],
@@ -109,7 +112,9 @@ export default function App() {
     setSelectedGroup(group);
     const training = trainings.find((t) => t.id === group.id);
     const contact = training?.contact ?? '';
-    setSelectedTrainer(createFallbackTrainerInfo(group.trainer, contact));
+    setSelectedTrainer(
+      getTrainerInfoForGroup(group.trainer, contact, trainersMap, training)
+    );
     setIsTrainerDrawerOpen(true);
   };
 
@@ -118,7 +123,9 @@ export default function App() {
     setSelectedGroup(group);
     const training = trainings.find((t) => t.id === group.id);
     const contact = training?.contact ?? '';
-    setSelectedTrainer(createFallbackTrainerInfo(group.trainer, contact));
+    setSelectedTrainer(
+      getTrainerInfoForGroup(group.trainer, contact, trainersMap, training)
+    );
     setIsBookingDialogOpen(true);
   };
 
