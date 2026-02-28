@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -18,3 +19,5 @@ export const db = getFirestore(app);
 
 // Инициализация Firebase Storage (Google Cloud Storage)
 export const storage = getStorage(app);
+
+export const auth = getAuth(app);

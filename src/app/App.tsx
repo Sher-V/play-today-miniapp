@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Routes, Route, useLocation } from 'react-router';
 import { TennisGroupCard, TennisGroup } from './components/TennisGroupCard';
 import { TennisFilters, FilterState } from './components/TennisFilters';
@@ -7,16 +7,25 @@ import { BookingDialog } from './components/BookingDialog';
 import { AddGroupPage } from './pages/AddGroupPage';
 import { MyGroupsPage } from './pages/MyGroupsPage';
 import { EditGroupPage } from './pages/EditGroupPage';
-import { Users, Loader2 } from 'lucide-react';
-import { Link } from 'react-router';
+import { Users, Loader2, Menu, List, LayoutGrid } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './components/ui/dropdown-menu';
+import { Button } from './components/ui/button';
 import { toast, Toaster } from 'sonner';
 import { useMyGroupTrainings } from '../hooks/useMyGroupTrainings';
+import { useGroupTrainings } from '../hooks/useGroupTrainings';
 import { useTrainers } from '../hooks/useTrainers';
 import { mapTrainingToGroup } from '../utils/trainingMapper';
 import { getTrainerInfoForGroup, createTrainersMap } from '../utils/trainerMapper';
 import { parseGroupDateTime, isPastDateTime } from '../utils/dateCalculator';
 import { useTelegram } from '../hooks/useTelegram';
 import { sendContactRequest } from '../lib/sendContactRequest';
+import { signInWithTelegram } from '../lib/telegramAuth';
 
 export default function App() {
   // Telegram Web App интеграция
@@ -30,11 +39,27 @@ export default function App() {
   } = useTelegram();
 
   const location = useLocation();
+  const navigate = useNavigate();
   const isListPage = location.pathname === '/';
+  const hasAttemptedAuth = useRef(false);
+
+  // Вход в Firebase Auth по Telegram initData (для Firestore/Storage rules: request.auth.uid == userId)
+  useEffect(() => {
+    if (!isTelegramWebApp || hasAttemptedAuth.current) return;
+    const initData = (typeof window !== 'undefined' && window.Telegram?.WebApp?.initData) || '';
+    if (!initData) return;
+    hasAttemptedAuth.current = true;
+    signInWithTelegram(initData).catch((err) =>
+      console.warn('Firebase auth sign-in:', err)
+    );
+  }, [isTelegramWebApp]);
   const isAddGroupPage = location.pathname === '/add-group';
 
-  // На главной показываем только группы текущего пользователя (по telegram user id)
-  const { trainings, loading, error } = useMyGroupTrainings(isListPage ? telegramUser?.id : undefined);
+  // На главной — все тренировки; для trainersMap нужны все тренеры
+  const { trainings: allTrainings, loading: allLoading, error: allError } = useGroupTrainings(isListPage);
+  const trainings = allTrainings;
+  const loading = allLoading;
+  const error = allError;
   const { trainers } = useTrainers(isListPage);
   const trainersMap = useMemo(() => createTrainersMap(trainers), [trainers]);
 
@@ -200,19 +225,25 @@ export default function App() {
                 {isListPage && !telegramUser && 'Откройте в Telegram'}
               </p>
             </div>
-            {/* Индикатор Telegram и ссылка «Мои тренировки» */}
-            {isListPage && isTelegramWebApp && telegramUser && (
-              <div className="text-right">
-                <Link
-                  to="/my-groups"
-                  className="text-xs text-blue-600 hover:underline block"
-                >
+            {/* Меню-бургер */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="shrink-0">
+                  <Menu className="h-6 w-6 text-gray-700" />
+                  <span className="sr-only">Меню</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => navigate('/my-groups')}>
+                  <List className="mr-2 h-4 w-4" />
                   Мои тренировки
-                </Link>
-                <p className="text-xs text-gray-500">Привет, {telegramUser.first_name}! 👋</p>
-                <p className="text-[10px] text-gray-400">via Telegram</p>
-              </div>
-            )}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/')}>
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  Все тренировки
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
@@ -272,27 +303,29 @@ export default function App() {
             <div className="bg-white rounded-lg shadow-sm border p-8 sm:p-12 text-center">
               <Users className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-                Мои тренировки
+                Групповые тренировки
               </h3>
               <p className="text-sm sm:text-base text-gray-600">
-                Откройте приложение в Telegram, чтобы видеть и управлять своими группами.
+                Откройте приложение в Telegram, чтобы видеть тренировки.
               </p>
             </div>
           ) : filteredGroups.length === 0 ? (
             <div className="bg-white rounded-lg shadow-sm border p-8 sm:p-12 text-center">
               <Users className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-                У вас пока нет тренировок
+                Пока нет тренировок
               </h3>
-              <p className="text-sm sm:text-base text-gray-600 mb-4">
-                Добавьте группу — она появится здесь.
+              <p className="text-sm sm:text-base text-gray-600">
+                Тренировки появятся, когда тренеры начнут их добавлять.
               </p>
-              <Link
-                to="/add-group"
-                className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-              >
-                Добавить группу
-              </Link>
+              {telegramUser && (
+                <Link
+                  to="/my-groups"
+                  className="mt-4 inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Мои тренировки
+                </Link>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">

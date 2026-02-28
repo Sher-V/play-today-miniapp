@@ -1,7 +1,64 @@
+import * as crypto from 'crypto';
 import { onRequest } from 'firebase-functions/v2/https';
 import { defineString } from 'firebase-functions/params';
+import { getAuth } from 'firebase-admin/auth';
+import { initializeApp, getApps } from 'firebase-admin/app';
 
 const telegramBotToken = defineString('TELEGRAM_BOT_TOKEN');
+
+if (!getApps().length) {
+  initializeApp();
+}
+
+/** Валидация Telegram Web App initData по алгоритму Telegram */
+function validateTelegramInitData(initData: string, botToken: string): { user?: { id: number } } | null {
+  const params = new URLSearchParams(initData);
+  const hash = params.get('hash');
+  if (!hash) return null;
+  params.delete('hash');
+  const sorted = [...params.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const dataCheckString = sorted.map(([k, v]) => `${k}=${v}`).join('\n');
+  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+  const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+  if (computedHash !== hash) return null;
+  const userStr = params.get('user');
+  if (!userStr) return null;
+  try {
+    const user = JSON.parse(userStr) as { id?: number };
+    return user?.id != null ? { user: { id: user.id } } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Cloud Function: возвращает Firebase custom token для входа по Telegram initData */
+export const getTelegramAuthToken = onRequest(
+  { cors: true },
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+    const token = telegramBotToken.value();
+    if (!token) {
+      res.status(500).json({ error: 'Server configuration error' });
+      return;
+    }
+    const { initData } = (req.body || {}) as { initData?: string };
+    if (!initData || typeof initData !== 'string') {
+      res.status(400).json({ error: 'Missing initData' });
+      return;
+    }
+    const validated = validateTelegramInitData(initData, token);
+    if (!validated?.user?.id) {
+      res.status(401).json({ error: 'Invalid or expired init data' });
+      return;
+    }
+    const uid = String(validated.user.id);
+    const customToken = await getAuth().createCustomToken(uid);
+    res.status(200).json({ customToken });
+  }
+);
 
 interface TrainingInfo {
   date?: string;

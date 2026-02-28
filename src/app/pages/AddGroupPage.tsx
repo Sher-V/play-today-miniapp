@@ -33,7 +33,7 @@ export function AddGroupPage() {
       await saveCoachProfile(userId, coachName, data);
       hapticFeedback('success');
       toast.success('Профиль тренера сохранён');
-      navigate('/');
+      navigate('/my-groups');
     } catch (e) {
       hapticFeedback('error');
       toast.error('Не удалось сохранить профиль', {
@@ -48,8 +48,13 @@ export function AddGroupPage() {
         role={afterSubmitRole}
         groupId={afterSubmitGroupId ?? undefined}
         telegramUserId={telegramUser?.id}
-        onBack={() => navigate('/')}
+        onBack={() => navigate('/my-groups')}
         onRegisterCoach={() => setScreen('coach')}
+        onAddAnotherGroup={() => {
+          setScreen('form');
+          setAfterSubmitRole(null);
+          setAfterSubmitGroupId(null);
+        }}
       />
     );
   }

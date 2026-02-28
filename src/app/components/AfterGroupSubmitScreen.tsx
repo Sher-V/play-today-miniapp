@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ChevronLeft, CheckCircle, UserCircle, AlertTriangle, Loader2, Upload, User } from 'lucide-react';
+import { ChevronLeft, CheckCircle, UserCircle, AlertTriangle, Loader2, Upload, User, Plus, List } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -14,6 +14,7 @@ interface AfterGroupSubmitScreenProps {
   telegramUserId: number | undefined;
   onBack: () => void;
   onRegisterCoach: () => void;
+  onAddAnotherGroup: () => void;
 }
 
 const COACH_ABOUT_PLACEHOLDER =
@@ -25,6 +26,7 @@ export function AfterGroupSubmitScreen({
   telegramUserId,
   onBack,
   onRegisterCoach,
+  onAddAnotherGroup,
 }: AfterGroupSubmitScreenProps) {
   const isAdmin = role === 'admin';
   const { hasCoach, loading: coachCheckLoading } = useHasCoachProfile(telegramUserId);
@@ -203,17 +205,23 @@ export function AfterGroupSubmitScreen({
           </div>
         ) : alreadyCoach ? (
           <div className="space-y-4">
-            <div className="flex flex-col items-center text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500">
-                <CheckCircle className="h-10 w-10 text-white" />
-              </div>
-              <h2 className="mt-3 text-lg font-bold text-gray-900">
-                Вы уже зарегистрированы как тренер
-              </h2>
+            <div className="flex flex-col gap-3">
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                onClick={onAddAnotherGroup}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Добавить ещё одну группу
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full border-blue-500 text-blue-600 hover:bg-blue-50"
+                onClick={onBack}
+              >
+                <List className="mr-2 h-4 w-4" />
+                Перейти в мои группы
+              </Button>
             </div>
-            <p className="text-center text-sm text-gray-600">
-              Ваш профиль отображается игрокам. Группа успешно добавлена.
-            </p>
           </div>
         ) : showCoachRegistration ? (
           <div className="space-y-5">

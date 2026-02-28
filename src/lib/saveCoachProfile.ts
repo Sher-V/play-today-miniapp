@@ -1,6 +1,7 @@
 import { doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from './firebase';
+import { db, storage, auth } from './firebase';
+import { ensureSignedIn } from './telegramAuth';
 import type { CoachFormData } from '../app/components/CoachRegistrationFlow';
 import type { CoachMediaItem } from './types';
 
@@ -51,6 +52,13 @@ export async function saveCoachProfile(
   coachName: string,
   data: CoachFormData
 ): Promise<void> {
+  await ensureSignedIn();
+  if (auth.currentUser?.uid !== userId) {
+    throw new Error(
+      `Ошибка авторизации: uid (${auth.currentUser?.uid ?? 'null'}) не совпадает с userId (${userId}). Откройте приложение заново в Telegram.`
+    );
+  }
+
   const districtLabels = data.districts.map((id) => DISTRICT_IDS_TO_LABELS[id] || id);
 
   let coachMedia: CoachMediaItem[] | undefined;

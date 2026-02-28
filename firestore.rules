@@ -1,0 +1,20 @@
+rules_version = '2';
+
+// Запись в users требует Firebase Auth (request.auth.uid == userId).
+// Клиент входит через getTelegramAuthToken Cloud Function (custom token с uid = Telegram ID).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /groupTrainings/{trainingId} {
+      allow read, write: if true;
+    }
+
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
