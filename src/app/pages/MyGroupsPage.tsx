@@ -40,21 +40,21 @@ export function MyGroupsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
           <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="text-gray-600">
             <ChevronLeft className="w-4 h-4" />
             Назад
           </Button>
-          <h2 className="font-semibold text-gray-900">Мои тренировки</h2>
+          <Button
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => navigate('/add-group')}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Добавить группу
+          </Button>
         </div>
-        <Button
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-          onClick={() => navigate('/add-group')}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Добавить группу
-        </Button>
+        <h2 className="font-semibold text-gray-900">Мои тренировки</h2>
       </div>
 
       {loading ? (
