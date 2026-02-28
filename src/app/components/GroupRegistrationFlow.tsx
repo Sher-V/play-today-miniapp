@@ -170,7 +170,7 @@ export function GroupRegistrationFlow({
     canProceedGroupSize,
     canProceedLevel,
     canProceedPrice,
-    contactOk,
+    ...(isAdmin ? [contactOk] : []),
   ];
 
   const maxUnlockedStep = stepChecks.findIndex((ok) => !ok);
@@ -531,25 +531,21 @@ export function GroupRegistrationFlow({
         className="h-9"
       />
     </div>,
-    /* Step 9 — контакт (только для администратора; у тренера контакт в профиле) */
-    <div key="8" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-900">{isAdmin ? 'Шаг 10' : 'Шаг 9'}</h3>
-      {isAdmin ? (
-        <>
-          <Label className="text-xs text-gray-600">Ваши контакты</Label>
-          <Input
-            placeholder="Телефон или @username"
-            value={formData.contact}
-            onChange={(e) => setFormData((p) => ({ ...p, contact: e.target.value }))}
-            className="h-9"
-          />
-        </>
-      ) : (
-        <p className="text-sm text-gray-600">
-          Контакт для связи можно указать в профиле тренера.
-        </p>
-      )}
-    </div>,
+    /* Шаг контакта — только для администратора клуба */
+    ...(isAdmin
+      ? [
+          <div key="8" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
+            <h3 className="font-semibold text-sm text-gray-900">Шаг 10</h3>
+            <Label className="text-xs text-gray-600">Ваши контакты</Label>
+            <Input
+              placeholder="Телефон или @username"
+              value={formData.contact}
+              onChange={(e) => setFormData((p) => ({ ...p, contact: e.target.value }))}
+              className="h-9"
+            />
+          </div>,
+        ]
+      : []),
   ];
 
   return (
