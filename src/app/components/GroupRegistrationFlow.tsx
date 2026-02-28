@@ -157,11 +157,9 @@ export function GroupRegistrationFlow({
   const canProceedGroupSize = formData.groupSize === '3-4' || formData.groupSize === '5-6';
   const canProceedLevel = formData.level != null;
   const canProceedPrice = /^\d+$/.test(formData.priceSingle) && Number(formData.priceSingle) >= 0;
-  const contactOk =
-    (isAdmin && formData.selectedTrainer
-      ? formData.selectedTrainer.contact
-      : formData.contact.trim()
-    ).length > 0;
+  const contactOk = isAdmin
+    ? (formData.selectedTrainer?.contact?.length ?? 0) > 0
+    : true; // для Тренера контакт указывается в профиле
 
   const stepChecks = [
     canProceedStep0,
@@ -180,8 +178,6 @@ export function GroupRegistrationFlow({
   const unlockedUntil = maxUnlockedStep === -1 ? stepChecks.length - 1 : maxUnlockedStep;
 
   const handleSubmit = async () => {
-    const effectiveContact =
-      isAdmin && formData.selectedTrainer ? formData.selectedTrainer.contact : formData.contact.trim();
     if (
       !formData.role ||
       !formData.courtName.trim() ||
@@ -192,7 +188,7 @@ export function GroupRegistrationFlow({
       (formData.groupSize !== '3-4' && formData.groupSize !== '5-6') ||
       !formData.level ||
       formData.priceSingle === '' ||
-      !effectiveContact
+      (formData.role === 'admin' && !(formData.selectedTrainer?.contact?.trim()))
     ) return;
 
     const dateTimeStr = `${format(formData.date, 'dd.MM')} ${formData.time}`;
@@ -202,7 +198,7 @@ export function GroupRegistrationFlow({
       isAdminSubmit && sel
         ? (sel.coachName || sel.trainerName).trim()
         : telegramUserName || 'Тренер';
-    const contact = isAdminSubmit && sel ? sel.contact : formData.contact.trim();
+    const contact = isAdminSubmit && sel ? sel.contact : (formData.role === 'coach' ? '' : formData.contact.trim());
 
     setSubmitting(true);
     try {
@@ -535,16 +531,24 @@ export function GroupRegistrationFlow({
         className="h-9"
       />
     </div>,
-    /* Step 9 — контакт */
+    /* Step 9 — контакт (только для администратора; у тренера контакт в профиле) */
     <div key="8" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
       <h3 className="font-semibold text-sm text-gray-900">{isAdmin ? 'Шаг 10' : 'Шаг 9'}</h3>
-      <Label className="text-xs text-gray-600">Ваши контакты</Label>
-      <Input
-        placeholder="Телефон или @username"
-        value={formData.contact}
-        onChange={(e) => setFormData((p) => ({ ...p, contact: e.target.value }))}
-        className="h-9"
-      />
+      {isAdmin ? (
+        <>
+          <Label className="text-xs text-gray-600">Ваши контакты</Label>
+          <Input
+            placeholder="Телефон или @username"
+            value={formData.contact}
+            onChange={(e) => setFormData((p) => ({ ...p, contact: e.target.value }))}
+            className="h-9"
+          />
+        </>
+      ) : (
+        <p className="text-sm text-gray-600">
+          Контакт для связи можно указать в профиле тренера.
+        </p>
+      )}
     </div>,
   ];
 
