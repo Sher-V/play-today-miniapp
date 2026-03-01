@@ -72,6 +72,7 @@ export function BookingDialog({
                       groupId: logContext?.groupId,
                       trainerName: displayName,
                       trainerUserId: logContext?.trainerUserId,
+                      contact: trainerContact.trim(),
                     });
                     toast.success('Контакт скопирован');
                   }}

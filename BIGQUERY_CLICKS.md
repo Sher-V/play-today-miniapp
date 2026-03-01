@@ -21,7 +21,7 @@
 |-----------------|--------|-------------|
 | `page_view`     | Заход на страницу (при смене маршрута) | path: '/' \| '/profile' \| '/my-groups' \| '/add-group' \| '/my-groups/:id' \| '/register-coach' |
 | `booking_click` | Нажатие «Записаться» на карточке или в шторке тренера | groupId, trainerName, **trainerUserId**, location, date, time, level, price, dayOfWeek |
-| `contact_copy`  | Копирование контакта тренера в модалке записи | groupId, trainerName, **trainerUserId** |
+| `contact_copy`  | Копирование контакта тренера в модалке записи | groupId, trainerName, **trainerUserId**, **contact** (скопированный текст) |
 | `booking_submit`| Отправка заявки «Связаться со мной» в диалоге | groupId, trainerName, **trainerUserId**, location, date, time, level, price |
 | `trainer_click` | Открытие карточки тренера (клик по группе) | groupId, trainerName, **trainerUserId**, location, date, time, level, price |
 | `menu_open`     | Открытие меню-бургера | — |
