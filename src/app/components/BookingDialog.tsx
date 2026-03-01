@@ -8,6 +8,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import { toast } from 'sonner';
+import { logEvent } from '../../lib/clickAnalytics';
 
 interface BookingDialogProps {
   isOpen: boolean;
@@ -16,6 +17,8 @@ interface BookingDialogProps {
   trainerContact: string;
   onContactMe: () => void;
   isContactSending?: boolean;
+  /** Контекст для логирования (groupId, trainerUserId) */
+  logContext?: { groupId?: string; trainerUserId?: number };
 }
 
 export function BookingDialog({ 
@@ -25,6 +28,7 @@ export function BookingDialog({
   trainerContact,
   onContactMe,
   isContactSending = false,
+  logContext,
 }: BookingDialogProps) {
   const hasContact = trainerContact.trim().length > 0;
   const displayName = trainerName.trim() || 'Тренер';
@@ -64,6 +68,11 @@ export function BookingDialog({
                 <Button
                   onClick={() => {
                     navigator.clipboard.writeText(trainerContact);
+                    logEvent('contact_copy', {
+                      groupId: logContext?.groupId,
+                      trainerName: displayName,
+                      trainerUserId: logContext?.trainerUserId,
+                    });
                     toast.success('Контакт скопирован');
                   }}
                   size="sm"
