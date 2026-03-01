@@ -70,6 +70,7 @@ export function EditGroupPage() {
   const navigate = useNavigate();
   const { user: telegramUser, hapticFeedback } = useTelegram();
   const fromPath = location.pathname;
+  const editCtx = (ctx: Record<string, unknown>) => ({ ...ctx, edit: true, groupId: id });
   const isClubAdmin = getStoredGroupRole(telegramUser?.id) === 'admin';
   const { trainers: clubTrainers } = useClubTrainers(telegramUser?.id, isClubAdmin);
 
@@ -296,7 +297,10 @@ export function EditGroupPage() {
                   setSelectedTrainer(null);
                 }}
                 onFocus={() => setTrainerInputFocused(true)}
-                onBlur={() => setTimeout(() => setTrainerInputFocused(false), 150)}
+                onBlur={() => {
+                  setTimeout(() => setTrainerInputFocused(false), 150);
+                  logEvent('group_form', editCtx({ step: 0, action: 'input', field: 'trainerSearch', length: trainerSearchQuery.length }));
+                }}
                 className="h-9 border-gray-300 bg-white focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20"
               />
               {trainerInputFocused && !selectedTrainer && filteredTrainers.length > 0 && (
@@ -308,6 +312,7 @@ export function EditGroupPage() {
                         className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-100"
                         onMouseDown={(e) => {
                           e.preventDefault();
+                          logEvent('group_form', editCtx({ step: 0, action: 'trainer_select', trainerId: t.id }));
                           setSelectedTrainer(t);
                           setTrainerSearchQuery(t.coachName || t.trainerName);
                           setTrainerInputFocused(false);
@@ -338,6 +343,7 @@ export function EditGroupPage() {
                   type="button"
                   className="text-gray-500 hover:text-gray-700"
                   onClick={() => {
+                    logEvent('group_form', editCtx({ step: 0, action: 'trainer_change_click' }));
                     setSelectedTrainer(null);
                     setTrainerSearchQuery(training.coachName?.trim() || training.trainerName || '');
                   }}
@@ -356,6 +362,7 @@ export function EditGroupPage() {
       <Input
         value={courtName}
         onChange={(e) => setCourtName(e.target.value)}
+        onBlur={() => logEvent('group_form', editCtx({ step: 1, action: 'input', field: 'courtName', length: courtName.length }))}
         placeholder="Например: ТК «Коломенский»"
         className="h-9 border-gray-300 bg-white focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20"
       />
@@ -371,7 +378,10 @@ export function EditGroupPage() {
             variant="outline"
             size="sm"
             className="h-9 justify-start gap-2"
-            onClick={() => setDateOpen((o) => !o)}
+            onClick={() => {
+              logEvent('group_form', editCtx({ step: 2, action: 'date_picker_click' }));
+              setDateOpen((o) => !o);
+            }}
           >
             <CalendarIcon className="w-4 h-4 shrink-0" />
             {date ? format(date, 'dd.MM.yyyy', { locale: ru }) : 'Выберите дату'}
@@ -381,7 +391,11 @@ export function EditGroupPage() {
               <Calendar
                 mode="single"
                 selected={date ?? undefined}
-                onSelect={(d) => { setDate(d ?? null); setDateOpen(false); }}
+                onSelect={(d) => {
+                  logEvent('group_form', editCtx({ step: 2, action: 'date_select', date: d ? format(d, 'yyyy-MM-dd') : null }));
+                  setDate(d ?? null);
+                  setDateOpen(false);
+                }}
                 disabled={(d) => {
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
@@ -448,6 +462,7 @@ export function EditGroupPage() {
               }
             }}
             placeholder="--:--"
+            onBlur={() => logEvent('group_form', editCtx({ step: 2, action: 'input', field: 'time', value: time || null }))}
             className="min-w-0 flex-1 text-base md:text-sm font-mono tabular-nums"
           />
         </div>
@@ -458,8 +473,8 @@ export function EditGroupPage() {
       <h3 className="font-semibold text-sm text-gray-900">Шаг 3</h3>
       <Label className="text-xs text-gray-600">Есть ли место в группе на регулярной основе?</Label>
       <div className="grid grid-cols-2 gap-2">
-        <Button variant={isRecurring ? 'primary' : 'outline'} size="sm" className="h-9" onClick={() => setIsRecurring(true)}>Да</Button>
-        <Button variant={!isRecurring ? 'primary' : 'outline'} size="sm" className="h-9" onClick={() => setIsRecurring(false)}>Нет</Button>
+        <Button variant={isRecurring ? 'primary' : 'outline'} size="sm" className="h-9" onClick={() => { logEvent('group_form', editCtx({ step: 3, action: 'recurring', value: true })); setIsRecurring(true); }}>Да</Button>
+        <Button variant={!isRecurring ? 'primary' : 'outline'} size="sm" className="h-9" onClick={() => { logEvent('group_form', editCtx({ step: 3, action: 'recurring', value: false })); setIsRecurring(false); }}>Нет</Button>
       </div>
     </div>,
     /* Шаг 4 */
@@ -468,7 +483,7 @@ export function EditGroupPage() {
       <Label className="text-xs text-gray-600">Длительность тренировки</Label>
       <div className="grid grid-cols-3 gap-2">
         {DURATION_OPTIONS.map((d) => (
-          <Button key={d} variant={duration === d ? 'primary' : 'outline'} size="sm" className="h-9" onClick={() => setDuration(d)}>
+          <Button key={d} variant={duration === d ? 'primary' : 'outline'} size="sm" className="h-9" onClick={() => { logEvent('group_form', editCtx({ step: 4, action: 'duration', value: d })); setDuration(d); }}>
             {d === 1 ? '1 час' : d === 1.5 ? '1.5 часа' : '2 часа'}
           </Button>
         ))}
@@ -480,7 +495,7 @@ export function EditGroupPage() {
       <Label className="text-xs text-gray-600">Сколько людей может заниматься в группе?</Label>
       <div className="grid grid-cols-2 gap-2">
         {GROUP_SIZE_OPTIONS.map((s) => (
-          <Button key={s} variant={groupSize === s ? 'primary' : 'outline'} size="sm" className="h-9" onClick={() => setGroupSize(s)}>{s} чел.</Button>
+          <Button key={s} variant={groupSize === s ? 'primary' : 'outline'} size="sm" className="h-9" onClick={() => { logEvent('group_form', editCtx({ step: 5, action: 'group_size', value: s })); setGroupSize(s); }}>{s} чел.</Button>
         ))}
       </div>
     </div>,
@@ -499,7 +514,7 @@ export function EditGroupPage() {
               variant={level === opt.value ? 'primary' : 'outline'}
               size="sm"
               className="text-xs"
-              onClick={() => setLevel(opt.value)}
+              onClick={() => { logEvent('group_form', editCtx({ step: 6, action: 'level', value: opt.value })); setLevel(opt.value); }}
             >
               {line2 ? <>{line1}<br />{line2}</> : line1}
             </Button>
@@ -517,6 +532,7 @@ export function EditGroupPage() {
         placeholder="Например: 3000"
         value={priceSingle}
         onChange={(e) => setPriceSingle(e.target.value.replace(/\D/g, ''))}
+        onBlur={() => logEvent('group_form', editCtx({ step: 7, action: 'input', field: 'priceSingle', length: priceSingle.length }))}
         className="h-9"
       />
     </div>,
@@ -530,6 +546,7 @@ export function EditGroupPage() {
               placeholder="Телефон или @username"
               value={contact}
               onChange={(e) => setContact(e.target.value)}
+              onBlur={() => logEvent('group_form', editCtx({ step: 8, action: 'input', field: 'contact', length: contact.length }))}
               className="h-9"
             />
           </div>,
@@ -563,7 +580,10 @@ export function EditGroupPage() {
       <div className="flex flex-col gap-2 sticky bottom-2 bg-gray-50/95 p-2 rounded-lg z-10">
         <Button
           className="w-full bg-blue-600 hover:bg-blue-700"
-          onClick={handleSave}
+          onClick={() => {
+            logEvent('group_form', editCtx({ step: 'submit', action: 'save_click' }));
+            handleSave();
+          }}
           disabled={!canSave || saving}
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Сохранить'}
@@ -571,7 +591,10 @@ export function EditGroupPage() {
         <Button
           variant="outline"
           className="w-full border-red-300 text-red-600 hover:bg-red-50"
-          onClick={handleDelete}
+          onClick={() => {
+            logEvent('group_form', editCtx({ step: 'submit', action: 'delete_click' }));
+            handleDelete();
+          }}
           disabled={deleting}
         >
           {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Trash2 className="mr-2 h-4 w-4" /> Удалить тренировку</>}

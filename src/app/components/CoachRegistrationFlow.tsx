@@ -6,6 +6,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { cn } from './ui/utils';
+import { logEvent } from '../../lib/clickAnalytics';
 
 const DISTRICTS = [
   { id: 'north', label: 'Север', row: 1 },
@@ -125,7 +126,10 @@ export function CoachRegistrationFlow({
   //     });
   // };
 
+  const formCtx = (ctx: Record<string, unknown>) => (isEditMode ? { ...ctx, edit: true } : ctx);
+
   const toggleDistrict = (id: string) => {
+    logEvent('coach_form', formCtx({ step: 2, action: 'district_click', value: id }));
     setFormData((p) => ({
       ...p,
       districts: p.districts.includes(id)
@@ -135,6 +139,7 @@ export function CoachRegistrationFlow({
   };
 
   const toggleDay = (day: string) => {
+    logEvent('coach_form', formCtx({ step: 6, action: 'day_click', value: day }));
     setFormData((p) => ({
       ...p,
       availableDays: p.availableDays.includes(day)
@@ -195,6 +200,7 @@ export function CoachRegistrationFlow({
           placeholder="Имя Фамилия"
           value={formData.name}
           onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
+          onBlur={() => logEvent('coach_form', formCtx({ step: 1, action: 'input', field: 'name', length: formData.name.length }))}
           className="h-9"
         />
       ),
@@ -223,12 +229,13 @@ export function CoachRegistrationFlow({
             variant={formData.districts.length === DISTRICTS.length ? 'primary' : 'outline'}
             size="sm"
             className="h-9 w-full whitespace-normal"
-            onClick={() =>
+            onClick={() => {
+              logEvent('coach_form', formCtx({ step: 2, action: 'district_all_click' }));
               setFormData((p) => ({
                 ...p,
                 districts: p.districts.length === DISTRICTS.length ? [] : DISTRICTS.map((d) => d.id),
-              }))
-            }
+              }));
+            }}
           >
             Любой
           </Button>
@@ -249,6 +256,7 @@ export function CoachRegistrationFlow({
           onChange={(e) =>
             setFormData((p) => ({ ...p, priceIndividual: e.target.value.replace(/\D/g, '') }))
           }
+          onBlur={() => logEvent('coach_form', formCtx({ step: 3, action: 'input', field: 'priceIndividual', length: formData.priceIndividual.length }))}
           className="h-9"
         />
       ),
@@ -267,6 +275,7 @@ export function CoachRegistrationFlow({
           onChange={(e) =>
             setFormData((p) => ({ ...p, priceSplit: e.target.value.replace(/\D/g, '') }))
           }
+          onBlur={() => logEvent('coach_form', formCtx({ step: 4, action: 'input', field: 'priceSplit', length: formData.priceSplit.length }))}
           className="h-9"
         />
       ),
@@ -285,6 +294,7 @@ export function CoachRegistrationFlow({
           onChange={(e) =>
             setFormData((p) => ({ ...p, priceGroup: e.target.value.replace(/\D/g, '') }))
           }
+          onBlur={() => logEvent('coach_form', formCtx({ step: 5, action: 'input', field: 'priceGroup', length: formData.priceGroup.length }))}
           className="h-9"
         />
       ),
@@ -326,7 +336,10 @@ export function CoachRegistrationFlow({
             variant={formData.availableDays.length === DAYS.length ? 'primary' : 'outline'}
             size="sm"
             className="h-9 w-full rounded-xl"
-            onClick={() => setFormData((p) => ({ ...p, availableDays: p.availableDays.length === DAYS.length ? [] : [...DAYS] }))}
+            onClick={() => {
+              logEvent('coach_form', formCtx({ step: 6, action: 'days_all_click' }));
+              setFormData((p) => ({ ...p, availableDays: p.availableDays.length === DAYS.length ? [] : [...DAYS] }));
+            }}
           >
             Все дни
           </Button>
@@ -344,6 +357,7 @@ export function CoachRegistrationFlow({
             placeholder="Расскажите о себе..."
             value={formData.about}
             onChange={(e) => setFormData((p) => ({ ...p, about: e.target.value.slice(0, 800) }))}
+            onBlur={() => logEvent('coach_form', formCtx({ step: 7, action: 'input', field: 'about', length: formData.about.length }))}
             rows={4}
             className="resize-none"
           />
@@ -357,6 +371,7 @@ export function CoachRegistrationFlow({
               placeholder="@username или +7 999 123-45-67"
               value={formData.coachContact ?? ''}
               onChange={(e) => setFormData((p) => ({ ...p, coachContact: e.target.value }))}
+              onBlur={() => logEvent('coach_form', formCtx({ step: 7, action: 'input', field: 'coachContact', length: (formData.coachContact ?? '').length }))}
               className="h-9"
             />
           </div>
@@ -409,13 +424,14 @@ export function CoachRegistrationFlow({
                       <button
                         type="button"
                         className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600"
-                        onClick={() =>
+                        onClick={() => {
+                          logEvent('coach_form', formCtx({ step: 8, action: 'photo_remove_existing' }));
                           setKeptExistingUrls((prev) => {
                             const next = new Set(prev);
                             next.delete(m.publicUrl!);
                             return next;
-                          })
-                        }
+                          });
+                        }}
                         title="Удалить"
                       >
                         ×
@@ -443,6 +459,7 @@ export function CoachRegistrationFlow({
               className="hidden"
               onChange={(e) => {
                 const files = e.target.files ? Array.from(e.target.files) : [];
+                logEvent('coach_form', formCtx({ step: 8, action: 'photo_upload', count: files.length }));
                 const added: PhotoItem[] = files.slice(0, 4 - photoItems.length).map((file) => ({
                   id: crypto.randomUUID(),
                   file,
@@ -495,6 +512,7 @@ export function CoachRegistrationFlow({
                       type="button"
                       className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-white hover:bg-gray-700"
                       onClick={() => {
+                        logEvent('coach_form', formCtx({ step: 8, action: 'photo_remove_new' }));
                         URL.revokeObjectURL(item.objectUrl);
                         setPhotoItems((p) => p.filter((q) => q.id !== item.id));
                       }}
@@ -509,7 +527,10 @@ export function CoachRegistrationFlow({
               type="button"
               variant="outline"
               className="h-12 w-full border-blue-400 bg-white font-medium text-gray-700 hover:bg-blue-50"
-              onClick={() => photoInputRef.current?.click()}
+              onClick={() => {
+                logEvent('coach_form', formCtx({ step: 8, action: 'photo_upload_click' }));
+                photoInputRef.current?.click();
+              }}
             >
               <Upload className="h-5 w-5 shrink-0 text-blue-600" />
               Загрузить фото
@@ -605,7 +626,15 @@ export function CoachRegistrationFlow({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-600">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            logEvent('coach_form', formCtx({ step: 'back', action: 'click' }));
+            onBack();
+          }}
+          className="text-gray-600"
+        >
           <ChevronLeft className="w-4 h-4" />
           Назад
         </Button>
@@ -660,7 +689,10 @@ export function CoachRegistrationFlow({
       <div className="flex gap-2 pt-4">
         <Button
           className="flex-1 bg-blue-600 hover:bg-blue-700"
-          onClick={handleSubmit}
+          onClick={() => {
+            logEvent('coach_form', formCtx({ step: 'submit', action: 'click' }));
+            handleSubmit();
+          }}
           disabled={!allValid || !canSubmitMedia || submitting}
         >
           {submitting ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Готово'}

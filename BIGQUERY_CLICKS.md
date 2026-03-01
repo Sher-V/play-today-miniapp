@@ -26,6 +26,8 @@
 | `menu_open`     | Открытие меню-бургера | — |
 | `menu_nav`      | Переход из меню | to: '/profile' \| '/my-groups' \| '/' \| '/register-coach' |
 | `back_click`   | Нажатие кнопки «Назад» | from: путь страницы (например '/profile', '/my-groups', '/add-group', '/my-groups/:id', '/register-coach'); опционально context: 'edit' \| 'after_submit' |
+| `group_form`   | Действия в форме добавления или **редактирования** группы | При редактировании в ctx также **edit: true**, **groupId**. step: 0–10 или 'submit'; action: 'role' \| 'input' \| 'trainer_select' \| 'add_trainer_click' \| 'trainer_change_click' \| 'date_picker_click' \| 'date_select' \| 'recurring' \| 'duration' \| 'group_size' \| 'level' \| 'click'; value, field, length, date и т.д. по контексту |
+| `coach_form`   | Действия в форме регистрации или **редактирования** тренера | При редактировании в ctx также **edit: true**. step: 1–8 или 'submit' \| 'back'; action: 'input' \| 'district_click' \| 'district_all_click' \| 'day_click' \| 'days_all_click' \| 'photo_upload' \| 'photo_upload_click' \| 'photo_remove_existing' \| 'photo_remove_new' \| 'click'; field, value, length, count по контексту |
 
 ## Настройка
 

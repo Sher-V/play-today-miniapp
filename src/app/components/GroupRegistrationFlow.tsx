@@ -12,6 +12,7 @@ import { setStoredGroupRole, type GroupCreatorRole } from '../../lib/groupRegist
 import { createGroupTraining } from '../../lib/createGroupTraining';
 import type { GroupTraining } from '../../lib/types';
 import { useClubTrainers } from '../../hooks/useClubTrainers';
+import { logEvent } from '../../lib/clickAnalytics';
 
 const LEVEL_OPTIONS: { value: GroupTraining['level']; label: string }[] = [
   { value: 'beginner', label: 'Начинающий 0-1' },
@@ -251,6 +252,7 @@ export function GroupRegistrationFlow({
           size="sm"
           className="whitespace-normal text-center"
           onClick={() => {
+              logEvent('group_form', { step: 1, action: 'role', value: 'coach' });
               setFormData((p) => ({ ...p, role: 'coach', trainerSearchQuery: '', selectedTrainer: null }));
               setStoredGroupRole(telegramUserId, 'coach');
             }}
@@ -262,6 +264,7 @@ export function GroupRegistrationFlow({
           size="sm"
           className="whitespace-normal text-center leading-tight"
           onClick={() => {
+              logEvent('group_form', { step: 1, action: 'role', value: 'admin' });
               setFormData((p) => ({ ...p, role: 'admin', trainerSearchQuery: '', selectedTrainer: null }));
               setStoredGroupRole(telegramUserId, 'admin');
             }}
@@ -286,6 +289,7 @@ export function GroupRegistrationFlow({
             selectedTrainer: null,
           }))
         }
+        onBlur={() => logEvent('group_form', { step: 2, action: 'input', field: 'courtName', length: formData.courtName.length })}
         className="h-9 border-gray-300 bg-white focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20"
       />
     </div>,
@@ -307,7 +311,10 @@ export function GroupRegistrationFlow({
                   }))
                 }
                 onFocus={() => setTrainerInputFocused(true)}
-                onBlur={() => setTimeout(() => setTrainerInputFocused(false), 150)}
+                onBlur={() => {
+                  setTimeout(() => setTrainerInputFocused(false), 150);
+                  logEvent('group_form', { step: 3, action: 'input', field: 'trainerSearch', length: (formData.trainerSearchQuery ?? '').length });
+                }}
                 className="h-9 border-gray-300 bg-white focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20"
               />
               {trainerInputFocused && !formData.selectedTrainer && filteredTrainers.length > 0 && (
@@ -319,6 +326,7 @@ export function GroupRegistrationFlow({
                         className="w-full px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-100"
                         onMouseDown={(e) => {
                           e.preventDefault();
+                          logEvent('group_form', { step: 3, action: 'trainer_select', trainerId: t.id });
                           setFormData((p) => ({
                             ...p,
                             selectedTrainer: t,
@@ -351,9 +359,10 @@ export function GroupRegistrationFlow({
                 variant="outline"
                 size="sm"
                 className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                onClick={() =>
-                  onAddClubTrainerRequest(formData.trainerSearchQuery?.trim() || undefined)
-                }
+                onClick={() => {
+                  logEvent('group_form', { step: 3, action: 'add_trainer_click' });
+                  onAddClubTrainerRequest(formData.trainerSearchQuery?.trim() || undefined);
+                }}
               >
                 <UserPlus className="mr-1.5 h-4 w-4" />
                 Добавить тренера
@@ -367,7 +376,10 @@ export function GroupRegistrationFlow({
                 <button
                   type="button"
                   className="text-gray-500 hover:text-gray-700"
-                  onClick={() => setFormData((p) => ({ ...p, selectedTrainer: null }))}
+                  onClick={() => {
+                    logEvent('group_form', { step: 3, action: 'trainer_change_click' });
+                    setFormData((p) => ({ ...p, selectedTrainer: null }));
+                  }}
                 >
                   Изменить
                 </button>
@@ -387,7 +399,10 @@ export function GroupRegistrationFlow({
             variant="outline"
             size="sm"
             className="h-9 justify-start gap-2"
-            onClick={() => setDateOpen((open) => !open)}
+            onClick={() => {
+              logEvent('group_form', { step: isAdmin ? 4 : 3, action: 'date_picker_click' });
+              setDateOpen((open) => !open);
+            }}
           >
             <CalendarIcon className="w-4 h-4 shrink-0" />
             {formData.date ? format(formData.date, 'dd.MM.yyyy', { locale: ru }) : 'Выберите дату'}
@@ -398,6 +413,7 @@ export function GroupRegistrationFlow({
                 mode="single"
                 selected={formData.date ?? undefined}
                 onSelect={(d) => {
+                  logEvent('group_form', { step: isAdmin ? 4 : 3, action: 'date_select', date: d ? format(d, 'yyyy-MM-dd') : null });
                   setFormData((p) => ({ ...p, date: d ?? null }));
                   setDateOpen(false);
                 }}
@@ -478,6 +494,7 @@ export function GroupRegistrationFlow({
               }
             }}
             placeholder="--:--"
+            onBlur={() => logEvent('group_form', { step: isAdmin ? 4 : 3, action: 'input', field: 'time', value: formData.time || null })}
             className="min-w-0 flex-1 text-base md:text-sm font-mono tabular-nums"
           />
         </div>
@@ -493,7 +510,10 @@ export function GroupRegistrationFlow({
           variant={formData.isRecurring === true ? 'primary' : 'outline'}
           size="sm"
           className="h-9"
-          onClick={() => setFormData((p) => ({ ...p, isRecurring: true }))}
+          onClick={() => {
+            logEvent('group_form', { step: isAdmin ? 5 : 4, action: 'recurring', value: true });
+            setFormData((p) => ({ ...p, isRecurring: true }));
+          }}
         >
           Да
         </Button>
@@ -501,7 +521,10 @@ export function GroupRegistrationFlow({
           variant={formData.isRecurring === false ? 'primary' : 'outline'}
           size="sm"
           className="h-9"
-          onClick={() => setFormData((p) => ({ ...p, isRecurring: false }))}
+          onClick={() => {
+            logEvent('group_form', { step: isAdmin ? 5 : 4, action: 'recurring', value: false });
+            setFormData((p) => ({ ...p, isRecurring: false }));
+          }}
         >
           Нет
         </Button>
@@ -518,7 +541,10 @@ export function GroupRegistrationFlow({
             variant={formData.duration === d ? 'primary' : 'outline'}
             size="sm"
             className="h-9"
-            onClick={() => setFormData((p) => ({ ...p, duration: d }))}
+            onClick={() => {
+              logEvent('group_form', { step: isAdmin ? 6 : 5, action: 'duration', value: d });
+              setFormData((p) => ({ ...p, duration: d }));
+            }}
           >
             {d === 1 ? '1 час' : d === 1.5 ? '1.5 часа' : '2 часа'}
           </Button>
@@ -536,7 +562,10 @@ export function GroupRegistrationFlow({
             variant={formData.groupSize === s ? 'primary' : 'outline'}
             size="sm"
             className="h-9"
-            onClick={() => setFormData((p) => ({ ...p, groupSize: s }))}
+            onClick={() => {
+              logEvent('group_form', { step: isAdmin ? 7 : 6, action: 'group_size', value: s });
+              setFormData((p) => ({ ...p, groupSize: s }));
+            }}
           >
             {s} чел.
           </Button>
@@ -558,7 +587,10 @@ export function GroupRegistrationFlow({
               variant={formData.level === opt.value ? 'primary' : 'outline'}
               size="sm"
               className="text-xs"
-              onClick={() => setFormData((p) => ({ ...p, level: opt.value }))}
+              onClick={() => {
+                logEvent('group_form', { step: isAdmin ? 8 : 7, action: 'level', value: opt.value });
+                setFormData((p) => ({ ...p, level: opt.value }));
+              }}
             >
               {line2 ? (
                 <>
@@ -584,6 +616,7 @@ export function GroupRegistrationFlow({
         placeholder="Например: 3000"
         value={formData.priceSingle}
         onChange={(e) => setFormData((p) => ({ ...p, priceSingle: e.target.value.replace(/\D/g, '') }))}
+        onBlur={() => logEvent('group_form', { step: isAdmin ? 9 : 8, action: 'input', field: 'priceSingle', length: formData.priceSingle.length })}
         className="h-9"
       />
     </div>,
@@ -597,6 +630,7 @@ export function GroupRegistrationFlow({
               placeholder="Телефон или @username"
               value={formData.contact}
               onChange={(e) => setFormData((p) => ({ ...p, contact: e.target.value }))}
+              onBlur={() => logEvent('group_form', { step: 10, action: 'input', field: 'contact', length: formData.contact.length })}
               className="h-9"
             />
           </div>,
@@ -636,7 +670,10 @@ export function GroupRegistrationFlow({
       <div className="flex gap-2 pt-4">
         <Button
           className="flex-1 bg-blue-600 hover:bg-blue-700"
-          onClick={handleSubmit}
+          onClick={() => {
+            logEvent('group_form', { step: 'submit', action: 'click' });
+            handleSubmit();
+          }}
           disabled={unlockedUntil < stepChecks.length - 1 || submitting}
         >
           {submitting ? 'Отправка...' : 'Готово'}
