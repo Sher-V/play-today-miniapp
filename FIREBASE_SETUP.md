@@ -63,6 +63,8 @@
 - `FIREBASE_SERVICE_ACCOUNT` — JSON ключ сервисного аккаунта **prod**-проекта.
 - `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` — конфиг **prod**-веб-приложения.
 
+**Cloud Functions (кнопка «Связаться со мной»):** при пуше в `dev` / `main` деплоятся и Hosting, и Functions. В **environment «dev»** добавьте свой секрет **`TELEGRAM_BOT_TOKEN`** (токен бота для stage из @BotFather). В **environment «prod»** добавьте свой **`TELEGRAM_BOT_TOKEN`** (токен бота для prod). У dev и prod — свои токены в своих секретах. Без этого секрета деплой функций завершится ошибкой (Hosting к этому моменту уже задеплоен).
+
 В workflow используется `GITHUB_TOKEN` (выдаётся автоматически). Stage и prod оба используют **target: miniapp** и одну и ту же структуру; различаются только проект и секреты (dev/prod environment).
 
 **Если в проекте несколько сайтов Hosting** и нужно деплоить на новый сайт, а не на дефолтный:
@@ -154,6 +156,8 @@ service cloud.firestore {
 
 ### Вариант 3: Продакшн-правила (для production)
 
+Требуется настройка Firebase Authentication (например, кастомный токен по Telegram). Без авторизации создание групп выдаст ошибку «Missing or insufficient permissions».
+
 ```javascript
 rules_version = '2';
 
@@ -182,6 +186,36 @@ service cloud.firestore {
   }
 }
 ```
+
+### Вариант 4: Разработка без Firebase Auth (создание групп разрешено)
+
+Если Firebase Authentication ещё не настроен, используйте эти правила, чтобы форма «Добавить группу» работала. **В продакшене лучше использовать Вариант 3 с авторизацией.**
+
+1. Откройте [Firebase Console](https://console.firebase.google.com/) → ваш проект → **Firestore Database** → вкладка **Rules**.
+2. Вставьте правила ниже и нажмите **Publish**.
+
+```javascript
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Коллекция groupTrainings: чтение всем, создание без авторизации (для разработки)
+    match /groupTrainings/{trainingId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if true;
+    }
+    
+    // Коллекция users: чтение всем, запись без авторизации (для разработки)
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+  }
+}
+```
+
+После публикации правил попробуйте снова нажать «Готово» в форме добавления группы.
 
 ---
 
@@ -299,6 +333,13 @@ service cloud.firestore {
 ### Связь тренировок и тренеров
 
 Приложение связывает данные по полю `trainerName` из `groupTrainings` и `coachName` из `users`. Убедитесь, что имена совпадают точно!
+
+## Индекс для «Мои тренировки»
+
+На странице `/my-groups` используется запрос к `groupTrainings` с фильтрами `userId`, `isActive` и сортировкой по `createdAt`. В Firebase Console → Firestore → Indexes при первом запросе может появиться предложение создать составной индекс. Создайте его по ссылке из ошибки или добавьте вручную:
+
+- Коллекция: `groupTrainings`
+- Поля: `userId` (Ascending), `isActive` (Ascending), `createdAt` (Descending)
 
 ## Примечания
 

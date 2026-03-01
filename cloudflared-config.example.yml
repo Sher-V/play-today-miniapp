@@ -1,0 +1,28 @@
+# Пример конфига Cloudflare Tunnel для проксирования
+# 1) Только фронт: https://localhost:5173 (Vite)
+# 2) Фронт + эмулятор функций: 5173 + http://localhost:5001
+#
+# Использование:
+# 1. cloudflared tunnel login
+# 2. cloudflared tunnel create play-today-dev
+# 3. Скопировать этот файл в ~/.cloudflared/config.yml
+# 4. Подставить tunnel UUID, credentials-file путь и свои hostname
+# 5. cloudflared tunnel route dns play-today-dev <hostname>
+# 6. cloudflared tunnel run play-today-dev
+#
+# Подробнее: CLOUDFLARE_TUNNEL.md
+
+tunnel: <Tunnel-UUID>
+credentials-file: /Users/<USER>/.cloudflared/<Tunnel-UUID>.json
+
+ingress:
+  # Эмулятор Firebase Functions (путь = project ID из .firebaserc)
+  - hostname: dev.example.com
+    path: "/play-today-479819/*"
+    service: http://localhost:5001
+  # Фронт (Vite, самоподписанный сертификат)
+  - hostname: dev.example.com
+    service: https://localhost:5173
+    originRequest:
+      noTLSVerify: true
+  - service: http_status:404

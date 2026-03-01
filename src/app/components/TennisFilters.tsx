@@ -73,7 +73,7 @@ export function TennisFilters({ filters, onFilterChange, activeFiltersCount }: T
             <Label className="text-xs text-gray-600">Время суток</Label>
             <div className="grid grid-cols-3 gap-2">
               <Button
-                variant={filters.timeOfDay.includes('morning') ? 'default' : 'outline'}
+                variant={filters.timeOfDay.includes('morning') ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => toggleTimeOfDay('morning')}
                 className="flex items-center justify-center gap-1.5 h-9 text-sm"
@@ -82,7 +82,7 @@ export function TennisFilters({ filters, onFilterChange, activeFiltersCount }: T
                 Утро
               </Button>
               <Button
-                variant={filters.timeOfDay.includes('afternoon') ? 'default' : 'outline'}
+                variant={filters.timeOfDay.includes('afternoon') ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => toggleTimeOfDay('afternoon')}
                 className="flex items-center justify-center gap-1.5 h-9 text-sm"
@@ -91,7 +91,7 @@ export function TennisFilters({ filters, onFilterChange, activeFiltersCount }: T
                 День
               </Button>
               <Button
-                variant={filters.timeOfDay.includes('evening') ? 'default' : 'outline'}
+                variant={filters.timeOfDay.includes('evening') ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => toggleTimeOfDay('evening')}
                 className="flex items-center justify-center gap-1.5 h-9 text-sm"
@@ -117,7 +117,7 @@ export function TennisFilters({ filters, onFilterChange, activeFiltersCount }: T
             </div>
             <div className="grid grid-cols-3 gap-2">
               <Button
-                variant={filters.level.includes('beginner') ? 'default' : 'outline'}
+                variant={filters.level.includes('beginner') ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => toggleLevel('beginner')}
                 className="h-9 text-sm px-2"
@@ -125,7 +125,7 @@ export function TennisFilters({ filters, onFilterChange, activeFiltersCount }: T
                 0-1
               </Button>
               <Button
-                variant={filters.level.includes('beginner_plus') ? 'default' : 'outline'}
+                variant={filters.level.includes('beginner_plus') ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => toggleLevel('beginner_plus')}
                 className="h-9 text-sm px-2"
@@ -133,7 +133,7 @@ export function TennisFilters({ filters, onFilterChange, activeFiltersCount }: T
                 1.5-2
               </Button>
               <Button
-                variant={filters.level.includes('intermediate') ? 'default' : 'outline'}
+                variant={filters.level.includes('intermediate') ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => toggleLevel('intermediate')}
                 className="h-9 text-sm px-2"
@@ -141,7 +141,7 @@ export function TennisFilters({ filters, onFilterChange, activeFiltersCount }: T
                 2.5-3
               </Button>
               <Button
-                variant={filters.level.includes('advanced') ? 'default' : 'outline'}
+                variant={filters.level.includes('advanced') ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => toggleLevel('advanced')}
                 className="h-9 text-sm px-2"
@@ -149,7 +149,7 @@ export function TennisFilters({ filters, onFilterChange, activeFiltersCount }: T
                 3-3.5
               </Button>
               <Button
-                variant={filters.level.includes('advanced_plus') ? 'default' : 'outline'}
+                variant={filters.level.includes('advanced_plus') ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => toggleLevel('advanced_plus')}
                 className="h-9 text-sm px-1.5"

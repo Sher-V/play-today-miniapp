@@ -1,10 +1,12 @@
-import { Calendar, Users, MapPin, Clock } from 'lucide-react';
+import { Calendar, Users, MapPin, Clock, Trash2 } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Card, CardContent } from './ui/card';
 
 export interface TennisGroup {
   id: string;
   trainer: string;
+  /** Telegram ID создателя тренировки (тренера) для уведомлений */
+  trainerUserId?: number;
   location: string;
   date: string;
   time: string;
@@ -24,9 +26,11 @@ interface TennisGroupCardProps {
   group: TennisGroup;
   onTrainerClick: () => void;
   onBookingClick: () => void;
+  /** Показать кнопку удаления (для создателя тренировки); при клике вызывается onDelete */
+  onDelete?: () => void;
 }
 
-export function TennisGroupCard({ group, onTrainerClick, onBookingClick }: TennisGroupCardProps) {
+export function TennisGroupCard({ group, onTrainerClick, onBookingClick, onDelete }: TennisGroupCardProps) {
   const levelColors = {
     green: 'bg-green-100 text-green-800 border-green-300',
     blue: 'bg-blue-100 text-blue-800 border-blue-300',
@@ -35,12 +39,12 @@ export function TennisGroupCard({ group, onTrainerClick, onBookingClick }: Tenni
 
   return (
     <Card 
-      className="hover:shadow-xl transition-all duration-200 border-2 cursor-pointer group hover:border-blue-300"
+      className="hover:shadow-xl transition-all duration-200 border-2 cursor-pointer group hover:border-blue-300 relative"
       onClick={onTrainerClick}
     >
       <CardContent className="p-4 sm:p-6">
         <div className="flex justify-between items-start mb-4">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-base sm:text-lg mb-1 text-gray-900">
               {group.location}
             </h3>
@@ -48,6 +52,20 @@ export function TennisGroupCard({ group, onTrainerClick, onBookingClick }: Tenni
               <span className="text-sm">{group.trainer}</span>
             </div>
           </div>
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="shrink-0 flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 border border-gray-200 hover:border-red-200 transition-colors"
+              title="Удалить тренировку"
+              aria-label="Удалить тренировку"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
+          )}
         </div>
 
         <div className="mb-3">
