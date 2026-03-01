@@ -91,6 +91,7 @@ export function EditGroupPage() {
   const [deleting, setDeleting] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
+  const priceStepRef = useRef<HTMLDivElement>(null);
   const [trainerInputFocused, setTrainerInputFocused] = useState(false);
 
   useEffect(() => {
@@ -505,7 +506,11 @@ export function EditGroupPage() {
       </div>
     </div>,
     /* Шаг 7 */
-    <div key="7" className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
+    <div
+      key="7"
+      ref={priceStepRef}
+      className="bg-white rounded-lg shadow-sm border p-3 space-y-3 scroll-mb-40"
+    >
       <h3 className="font-semibold text-sm text-gray-900">Шаг 7</h3>
       <Label className="text-xs text-gray-600">Стоимость пробного занятия для человека (₽)</Label>
       <Input
@@ -514,6 +519,9 @@ export function EditGroupPage() {
         placeholder="Например: 3000"
         value={priceSingle}
         onChange={(e) => setPriceSingle(e.target.value.replace(/\D/g, ''))}
+        onFocus={() =>
+          priceStepRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        }
         className="h-9"
       />
     </div>,
@@ -544,7 +552,7 @@ export function EditGroupPage() {
         <h2 className="font-semibold text-gray-900">Редактирование тренировки</h2>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 pb-40">
         {stepBlocks.map((block, index) => (
           <div key={index} className="relative">
             {block}
@@ -557,7 +565,7 @@ export function EditGroupPage() {
         ))}
       </div>
 
-      <div className="flex flex-col gap-2 sticky bottom-2 bg-gray-50/95 p-2 rounded-lg">
+      <div className="flex flex-col gap-2 sticky bottom-2 bg-gray-50/95 p-2 rounded-lg z-10">
         <Button
           className="w-full bg-blue-600 hover:bg-blue-700"
           onClick={handleSave}
