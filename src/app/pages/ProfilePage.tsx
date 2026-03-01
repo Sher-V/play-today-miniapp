@@ -115,7 +115,7 @@ export function ProfilePage() {
   return (
     <ProfileView
       profile={displayProfile}
-      onBack={() => navigate('/')}
+      onBack={() => navigate(-1)}
       onEdit={() => setIsEditMode(true)}
       onRegisterCoach={() => navigate('/register-coach')}
       onVisibilityChange={

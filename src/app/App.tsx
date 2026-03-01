@@ -276,6 +276,17 @@ export default function App() {
               </Button>
               <SheetContent side="right" className="w-64">
                 <div className="flex flex-col gap-1 pt-4">
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate('/profile');
+                    }}
+                  >
+                    <Users className="h-5 w-5 text-blue-600" />
+                    Мой профиль
+                  </button>
                   {showMyTrainings && (
                     <button
                       type="button"
@@ -313,17 +324,6 @@ export default function App() {
                       Регистрация тренера
                     </button>
                   )}
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      navigate('/profile');
-                    }}
-                  >
-                    <Users className="h-5 w-5 text-blue-600" />
-                    Мой профиль
-                  </button>
                 </div>
               </SheetContent>
             </Sheet>
