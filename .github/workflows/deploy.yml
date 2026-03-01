@@ -32,6 +32,8 @@ jobs:
           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          # Регион Cloud Functions для logClick (europe-west1)
+          VITE_CLOUD_FUNCTIONS_REGION: europe-west1
 
       - name: Set firebase config for stage (site play-today-miniapp-dev)
         run: |
@@ -52,11 +54,13 @@ jobs:
       - name: Deploy Cloud Functions, Firestore & Storage rules (stage)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          REGION: europe-west1
         run: |
           echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" > functions/.env
           cd functions && npm ci && npm run build && cd ..
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > sa.json
           export GOOGLE_APPLICATION_CREDENTIALS="$PWD/sa.json"
+          for fn in getTelegramAuthToken sendContactRequest logClick; do npx firebase-tools functions:delete "$fn" --region us-central1 --force --project "${{ secrets.VITE_FIREBASE_PROJECT_ID }}" --non-interactive 2>/dev/null || true; done
           npx firebase-tools deploy --only functions,firestore,storage --non-interactive --project "${{ secrets.VITE_FIREBASE_PROJECT_ID }}"
 
   deploy_prod:
@@ -81,6 +85,7 @@ jobs:
           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_CLOUD_FUNCTIONS_REGION: europe-west1
 
       - name: Set Hosting target to play-today-miniapp
         run: |
@@ -98,9 +103,11 @@ jobs:
       - name: Deploy Cloud Functions, Firestore & Storage rules (prod)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          REGION: europe-west1
         run: |
           echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" > functions/.env
           cd functions && npm ci && npm run build && cd ..
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > sa.json
           export GOOGLE_APPLICATION_CREDENTIALS="$PWD/sa.json"
+          for fn in getTelegramAuthToken sendContactRequest logClick; do npx firebase-tools functions:delete "$fn" --region us-central1 --force --project ${{ secrets.VITE_FIREBASE_PROJECT_ID }} --non-interactive 2>/dev/null || true; done
           npx firebase-tools deploy --only functions,firestore,storage --non-interactive --project ${{ secrets.VITE_FIREBASE_PROJECT_ID }}

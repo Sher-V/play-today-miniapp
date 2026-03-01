@@ -7,6 +7,7 @@ import { useTelegram } from '../../hooks/useTelegram';
 import { mapTrainingToGroup } from '../../utils/trainingMapper';
 import { deleteGroupTraining } from '../../lib/createGroupTraining';
 import { toast } from 'sonner';
+import { logEvent } from '../../lib/clickAnalytics';
 
 export function MyGroupsPage() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export function MyGroupsPage() {
   if (telegramUser?.id == null) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="text-gray-600">
+        <Button variant="ghost" size="sm" onClick={() => { logEvent('back_click', { from: '/my-groups' }); navigate('/'); }} className="text-gray-600">
           <ChevronLeft className="w-4 h-4" />
           Назад
         </Button>
@@ -42,7 +43,7 @@ export function MyGroupsPage() {
     <div className="space-y-4">
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="text-gray-600">
+          <Button variant="ghost" size="sm" onClick={() => { logEvent('back_click', { from: '/my-groups' }); navigate('/'); }} className="text-gray-600">
             <ChevronLeft className="w-4 h-4" />
             Назад
           </Button>

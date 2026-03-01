@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import { CoachRegistrationFlow } from '../components/CoachRegistrationFlow';
 import { useTelegram } from '../../hooks/useTelegram';
 import { toast } from 'sonner';
+import { logEvent } from '../../lib/clickAnalytics';
 import type { CoachFormData } from '../components/CoachRegistrationFlow';
 import { saveCoachProfile } from '../../lib/saveCoachProfile';
 import { updateGroupTraining } from '../../lib/createGroupTraining';
@@ -57,7 +58,7 @@ export function RegisterCoachPage() {
 
   return (
     <CoachRegistrationFlow
-      onBack={() => navigate('/')}
+      onBack={() => { logEvent('back_click', { from: '/register-coach' }); navigate('/'); }}
       onSubmit={handleSubmit}
       userId={userId}
       fromGroupId={fromGroupId}

@@ -5,6 +5,7 @@ import { ProfileView } from '../components/ProfileView';
 import { useTelegram } from '../../hooks/useTelegram';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { toast } from 'sonner';
+import { logEvent } from '../../lib/clickAnalytics';
 import type { CoachFormData } from '../components/CoachRegistrationFlow';
 import { saveCoachProfile, coachDistrictsLabelsToIds, updateCoachProfileVisibility } from '../../lib/saveCoachProfile';
 import { Loader2 } from 'lucide-react';
@@ -46,7 +47,10 @@ export function ProfilePage() {
       <div className="space-y-4 p-4">
         <button
           type="button"
-          onClick={() => navigate('/')}
+          onClick={() => {
+            logEvent('back_click', { from: '/profile' });
+            navigate('/');
+          }}
           className="text-sm text-blue-600 hover:underline"
         >
           ← Назад
@@ -70,7 +74,10 @@ export function ProfilePage() {
       <div className="space-y-4 p-4">
         <button
           type="button"
-          onClick={() => navigate('/')}
+          onClick={() => {
+            logEvent('back_click', { from: '/profile' });
+            navigate('/');
+          }}
           className="text-sm text-blue-600 hover:underline"
         >
           ← Назад
@@ -98,7 +105,10 @@ export function ProfilePage() {
 
     return (
       <CoachRegistrationFlow
-        onBack={() => setIsEditMode(false)}
+        onBack={() => {
+          logEvent('back_click', { from: '/profile', context: 'edit' });
+          setIsEditMode(false);
+        }}
         onSubmit={handleSubmit}
         initialData={initialData}
         isEditMode={!!hasCoachData}
@@ -115,7 +125,10 @@ export function ProfilePage() {
   return (
     <ProfileView
       profile={displayProfile}
-      onBack={() => navigate(-1)}
+      onBack={() => {
+        logEvent('back_click', { from: '/profile' });
+        navigate(-1);
+      }}
       onEdit={() => setIsEditMode(true)}
       onRegisterCoach={() => navigate('/register-coach')}
       onVisibilityChange={

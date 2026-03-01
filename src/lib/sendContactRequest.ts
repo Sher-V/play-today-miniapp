@@ -30,8 +30,9 @@ function getSendContactRequestUrl(): string {
   const url = import.meta.env.VITE_SEND_CONTACT_REQUEST_URL;
   if (url && typeof url === 'string') return url;
   const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+  const region = import.meta.env.VITE_CLOUD_FUNCTIONS_REGION || 'europe-west1';
   if (projectId)
-    return `https://us-central1-${projectId}.cloudfunctions.net/sendContactRequest`;
+    return `https://${region}-${projectId}.cloudfunctions.net/sendContactRequest`;
   throw new Error(
     'Set VITE_SEND_CONTACT_REQUEST_URL or VITE_FIREBASE_PROJECT_ID in .env'
   );

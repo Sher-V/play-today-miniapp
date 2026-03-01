@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useLocation } from 'react-router';
 import { format, addMonths } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Check, ChevronLeft, Clock, Loader2, Trash2 } from 'lucide-react';
@@ -18,6 +18,7 @@ import {
 } from '../../lib/createGroupTraining';
 import type { GroupTraining } from '../../lib/types';
 import { toast } from 'sonner';
+import { logEvent } from '../../lib/clickAnalytics';
 
 const LEVEL_OPTIONS: { value: GroupTraining['level']; label: string }[] = [
   { value: 'beginner', label: 'Начинающий 0-1' },
@@ -65,8 +66,10 @@ function parseDateTime(dateTime: string): { date: Date; time: string } {
 
 export function EditGroupPage() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
   const { user: telegramUser, hapticFeedback } = useTelegram();
+  const fromPath = location.pathname;
   const isClubAdmin = getStoredGroupRole(telegramUser?.id) === 'admin';
   const { trainers: clubTrainers } = useClubTrainers(telegramUser?.id, isClubAdmin);
 
@@ -235,7 +238,7 @@ export function EditGroupPage() {
   if (error) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/my-groups')} className="text-gray-600">
+        <Button variant="ghost" size="sm" onClick={() => { logEvent('back_click', { from: fromPath }); navigate('/my-groups'); }} className="text-gray-600">
           <ChevronLeft className="w-4 h-4" />
           Назад
         </Button>
@@ -247,7 +250,7 @@ export function EditGroupPage() {
   if (forbidden || !training) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/my-groups')} className="text-gray-600">
+        <Button variant="ghost" size="sm" onClick={() => { logEvent('back_click', { from: fromPath }); navigate('/my-groups'); }} className="text-gray-600">
           <ChevronLeft className="w-4 h-4" />
           Назад
         </Button>
@@ -537,7 +540,7 @@ export function EditGroupPage() {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/my-groups')} className="text-gray-600">
+        <Button variant="ghost" size="sm" onClick={() => { logEvent('back_click', { from: fromPath }); navigate('/my-groups'); }} className="text-gray-600">
           <ChevronLeft className="w-4 h-4" />
           Назад
         </Button>

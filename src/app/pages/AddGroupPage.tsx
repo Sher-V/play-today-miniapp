@@ -7,6 +7,7 @@ import { Sheet, SheetContent } from '../components/ui/sheet';
 import { useTelegram } from '../../hooks/useTelegram';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import type { GroupCreatorRole } from '../../lib/groupRegistrationStorage';
+import { logEvent } from '../../lib/clickAnalytics';
 
 function toTrainerAtCourt(t: NewlyCreatedClubTrainer): TrainerAtCourt {
   return {
@@ -44,7 +45,7 @@ export function AddGroupPage() {
         groupId={afterSubmitGroupId ?? undefined}
         telegramUserId={telegramUser?.id}
         trainerWasExisting={trainerWasExisting}
-        onBack={() => navigate('/my-groups')}
+        onBack={() => { logEvent('back_click', { from: '/add-group', context: 'after_submit' }); navigate('/my-groups'); }}
         onRegisterCoach={() => {
           const gid = afterSubmitGroupId ?? undefined;
           const path = gid ? `/register-coach?fromGroupId=${encodeURIComponent(gid)}` : '/register-coach';
@@ -72,7 +73,7 @@ export function AddGroupPage() {
           setTrainerWasExisting(opts?.trainerWasExisting ?? false);
           setScreen('after');
         }}
-        onBack={() => navigate('/')}
+        onBack={() => { logEvent('back_click', { from: '/add-group' }); navigate('/'); }}
         onAddClubTrainerRequest={
           telegramUser?.id
             ? (initialName) => {

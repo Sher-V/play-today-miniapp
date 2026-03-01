@@ -25,6 +25,7 @@ import { useHasCoachProfile } from '../hooks/useHasCoachProfile';
 import { getStoredGroupRole } from '../lib/groupRegistrationStorage';
 import { sendContactRequest } from '../lib/sendContactRequest';
 import { signInWithTelegram } from '../lib/telegramAuth';
+import { logEvent } from '../lib/clickAnalytics';
 
 export default function App() {
   // Telegram Web App интеграция
@@ -54,6 +55,12 @@ export default function App() {
       console.warn('Firebase auth sign-in:', err)
     );
   }, [isTelegramWebApp]);
+
+  // Логирование заходов на страницы
+  useEffect(() => {
+    logEvent('page_view', { path: location.pathname });
+  }, [location.pathname]);
+
   const isAddGroupPage = location.pathname === '/add-group';
 
   // На главной — все тренировки; для trainersMap нужны все тренеры
@@ -157,6 +164,16 @@ export default function App() {
       getTrainerInfoForGroup(group.trainer, contact, trainersMap, training)
     );
     setIsTrainerDrawerOpen(true);
+    logEvent('trainer_click', {
+      groupId: group.id,
+      trainerName: group.trainer,
+      trainerUserId: group.trainerUserId,
+      location: group.location,
+      date: group.date,
+      time: group.time,
+      level: group.level,
+      price: group.price,
+    });
   };
 
   const handleBookingClick = (group: TennisGroup) => {
@@ -168,6 +185,17 @@ export default function App() {
       getTrainerInfoForGroup(group.trainer, contact, trainersMap, training)
     );
     setIsBookingDialogOpen(true);
+    logEvent('booking_click', {
+      groupId: group.id,
+      trainerName: group.trainer,
+      trainerUserId: group.trainerUserId,
+      location: group.location,
+      date: group.date,
+      time: group.time,
+      level: group.level,
+      price: group.price,
+      dayOfWeek: group.dayOfWeek,
+    });
   };
 
   const [isContactSending, setIsContactSending] = useState(false);
@@ -193,6 +221,17 @@ export default function App() {
 
     setIsContactSending(true);
     hapticFeedback('medium');
+
+    logEvent('booking_submit', {
+      groupId: selectedGroup?.id,
+      trainerName,
+      trainerUserId: selectedGroup?.trainerUserId,
+      location: selectedGroup?.location,
+      date: selectedGroup?.date,
+      time: selectedGroup?.time,
+      level: selectedGroup?.level,
+      price: selectedGroup?.price,
+    });
 
     const payload = {
       telegramId: Number(rawTelegramId),
@@ -269,6 +308,7 @@ export default function App() {
                 onClick={() => {
                   hapticFeedback('light');
                   setIsMenuOpen(true);
+                  logEvent('menu_open');
                 }}
                 aria-label="Открыть меню"
               >
@@ -281,6 +321,7 @@ export default function App() {
                     className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
                     onClick={() => {
                       setIsMenuOpen(false);
+                      logEvent('menu_nav', { to: '/profile' });
                       navigate('/profile');
                     }}
                   >
@@ -293,6 +334,7 @@ export default function App() {
                       className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
                       onClick={() => {
                         setIsMenuOpen(false);
+                        logEvent('menu_nav', { to: '/my-groups' });
                         navigate('/my-groups');
                       }}
                     >
@@ -305,6 +347,7 @@ export default function App() {
                     className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
                     onClick={() => {
                       setIsMenuOpen(false);
+                      logEvent('menu_nav', { to: '/' });
                       navigate('/');
                     }}
                   >
@@ -317,6 +360,7 @@ export default function App() {
                       className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100"
                       onClick={() => {
                         setIsMenuOpen(false);
+                        logEvent('menu_nav', { to: '/register-coach' });
                         navigate('/register-coach');
                       }}
                     >
@@ -438,6 +482,20 @@ export default function App() {
         onBooking={() => {
           setIsTrainerDrawerOpen(false);
           setIsBookingDialogOpen(true);
+          if (selectedGroup) {
+            hapticFeedback('medium');
+            logEvent('booking_click', {
+              groupId: selectedGroup.id,
+              trainerName: selectedGroup.trainer,
+              trainerUserId: selectedGroup.trainerUserId,
+              location: selectedGroup.location,
+              date: selectedGroup.date,
+              time: selectedGroup.time,
+              level: selectedGroup.level,
+              price: selectedGroup.price,
+              dayOfWeek: selectedGroup.dayOfWeek,
+            });
+          }
         }}
       />
 

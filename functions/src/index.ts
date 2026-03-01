@@ -3,15 +3,36 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { defineString } from 'firebase-functions/params';
 import { getAuth } from 'firebase-admin/auth';
 import { initializeApp, getApps } from 'firebase-admin/app';
+import { BigQuery } from '@google-cloud/bigquery';
 
 const telegramBotToken = defineString('TELEGRAM_BOT_TOKEN');
+
+const BQ_DATASET = 'telegram_bot_analytics';
+const BQ_TABLE = 'miniapp_stats';
+
+/** Регион функций и BigQuery (задаётся через REGION при деплое) */
+const REGION = process.env.REGION || 'europe-west1';
 
 if (!getApps().length) {
   initializeApp();
 }
 
-/** Валидация Telegram Web App initData по алгоритму Telegram */
-function validateTelegramInitData(initData: string, botToken: string): { user?: { id: number } } | null {
+/** Пользователь Telegram из initData (после валидации) */
+interface TelegramUserFromInitData {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+  is_premium?: boolean;
+  photo_url?: string;
+}
+
+/** Валидация Telegram Web App initData и извлечение пользователя */
+function validateAndParseTelegramInitData(
+  initData: string,
+  botToken: string
+): { user: TelegramUserFromInitData } | null {
   const params = new URLSearchParams(initData);
   const hash = params.get('hash');
   if (!hash) return null;
@@ -24,16 +45,22 @@ function validateTelegramInitData(initData: string, botToken: string): { user?: 
   const userStr = params.get('user');
   if (!userStr) return null;
   try {
-    const user = JSON.parse(userStr) as { id?: number };
-    return user?.id != null ? { user: { id: user.id } } : null;
+    const user = JSON.parse(userStr) as TelegramUserFromInitData;
+    return user?.id != null ? { user } : null;
   } catch {
     return null;
   }
 }
 
+/** Валидация Telegram Web App initData по алгоритму Telegram (только id) */
+function validateTelegramInitData(initData: string, botToken: string): { user?: { id: number } } | null {
+  const parsed = validateAndParseTelegramInitData(initData, botToken);
+  return parsed ? { user: { id: parsed.user.id } } : null;
+}
+
 /** Cloud Function: возвращает Firebase custom token для входа по Telegram initData */
 export const getTelegramAuthToken = onRequest(
-  { cors: true },
+  { cors: true, region: REGION },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.status(405).json({ error: 'Method not allowed' });
@@ -143,7 +170,7 @@ function getPupilChatLink(pupilUsername: string | undefined, pupilTelegramId: nu
 }
 
 export const sendContactRequest = onRequest(
-  { cors: true },
+  { cors: true, region: REGION },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.status(405).json({ error: 'Method not allowed' });
@@ -240,6 +267,80 @@ export const sendContactRequest = onRequest(
     } catch (err) {
       console.error('sendContactRequest error:', err);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
+
+/** Тело запроса для логирования события в BigQuery */
+interface LogClickRequestBody {
+  initData: string;
+  event: string;
+  ctx?: Record<string, unknown>;
+  pathname?: string;
+  timestamp: string;
+}
+
+/** Cloud Function: логирует событие в BigQuery (telegramId, ник, имя, event, ctx) */
+export const logClick = onRequest(
+  { cors: true, region: REGION },
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+    const token = telegramBotToken.value();
+    if (!token) {
+      res.status(500).json({ error: 'Server configuration error' });
+      return;
+    }
+    let body: LogClickRequestBody;
+    try {
+      body = req.body as LogClickRequestBody;
+    } catch {
+      res.status(400).json({ error: 'Invalid JSON body' });
+      return;
+    }
+    const { initData, event, ctx = {}, pathname, timestamp } = body;
+    if (!initData || typeof initData !== 'string' || !event || typeof event !== 'string' || !timestamp) {
+      res.status(400).json({ error: 'Missing required fields: initData, event, timestamp' });
+      return;
+    }
+    const parsed = validateAndParseTelegramInitData(initData, token);
+    if (!parsed?.user) {
+      res.status(401).json({ error: 'Invalid or expired init data' });
+      return;
+    }
+    const user = parsed.user;
+    try {
+      const projectId = process.env.GCLOUD_PROJECT ?? process.env.GCP_PROJECT;
+      const bigquery = new BigQuery({
+        ...(projectId && { projectId }),
+        location: REGION,
+      });
+      const row = {
+        telegram_id: user.id,
+        username: user.username ?? null,
+        first_name: user.first_name ?? null,
+        last_name: user.last_name ?? null,
+        language_code: user.language_code ?? null,
+        is_premium: user.is_premium ?? null,
+        pathname: pathname ?? null,
+        event,
+        ctx: JSON.stringify(ctx),
+        timestamp_utc: timestamp,
+      };
+      await bigquery
+        .dataset(BQ_DATASET)
+        .table(BQ_TABLE)
+        .insert([row]);
+      res.status(200).json({ success: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('logClick BigQuery error:', err);
+      res.status(500).json({
+        error: 'Internal server error',
+        details: message,
+      });
     }
   }
 );

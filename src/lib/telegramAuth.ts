@@ -10,8 +10,9 @@ function getTelegramAuthTokenUrl(): string {
   const url = import.meta.env.VITE_GET_TELEGRAM_AUTH_TOKEN_URL;
   if (url && typeof url === 'string') return url;
   const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+  const region = import.meta.env.VITE_CLOUD_FUNCTIONS_REGION || 'europe-west1';
   if (projectId)
-    return `https://us-central1-${projectId}.cloudfunctions.net/getTelegramAuthToken`;
+    return `https://${region}-${projectId}.cloudfunctions.net/getTelegramAuthToken`;
   throw new Error(
     'Set VITE_GET_TELEGRAM_AUTH_TOKEN_URL or VITE_FIREBASE_PROJECT_ID in .env'
   );
