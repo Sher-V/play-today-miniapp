@@ -521,6 +521,10 @@ export default function App() {
         trainerContact={selectedTrainer?.contact || ''}
         onContactMe={handleContactMe}
         isContactSending={isContactSending}
+        logContext={{
+          groupId: selectedGroup?.id,
+          trainerUserId: selectedGroup?.trainerUserId,
+        }}
       />
     </div>
   );
