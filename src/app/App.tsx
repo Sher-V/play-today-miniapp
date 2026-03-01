@@ -99,9 +99,23 @@ export default function App() {
     [trainers]
   );
 
+  // ID пользователей с зарегистрированным профилем тренера (isCoach)
+  const coachProfileUserIds = useMemo(
+    () => new Set(trainers.map((t) => t.id)),
+    [trainers]
+  );
+
+  // Группы, созданные тренером (!coachUserId) — скрываем, если тренер не зарегистрировал профиль
+  const trainingsFilteredByCoachProfile = useMemo(() => {
+    return trainings.filter((training) => {
+      if (training.coachUserId != null) return true; // создано админом
+      return coachProfileUserIds.has(String(training.userId));
+    });
+  }, [trainings, coachProfileUserIds]);
+
   // Фильтрация групп
   const filteredGroups = useMemo(() => {
-    return trainings.map(mapTrainingToGroup).filter((group) => {
+    return trainingsFilteredByCoachProfile.map(mapTrainingToGroup).filter((group) => {
       // Не показывать группы тренеров с неактивным профилем
       if (group.trainerUserId != null && hiddenTrainerIds.has(String(group.trainerUserId))) {
         return false;
@@ -153,7 +167,7 @@ export default function App() {
       const dateB = parseGroupDateTime(b.date, b.time);
       return dateA.getTime() - dateB.getTime();
     });
-  }, [filters, trainings, hiddenTrainerIds]);
+  }, [filters, trainingsFilteredByCoachProfile, hiddenTrainerIds]);
 
   const handleTrainerClick = (group: TennisGroup) => {
     hapticFeedback('light');
